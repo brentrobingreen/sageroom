@@ -14,6 +14,7 @@ from ..services.billing_service import (
 )
 from ..services.brain_service import get_brain_or_404
 from ..services.chat_service import stream_chat
+from ..services.cost_service import check_cost_cap
 from .auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -64,6 +65,11 @@ async def chat_stream(request: Request, body: ChatRequest, current_user: dict = 
                 detail="You've used your 10 free messages. Subscribe to continue chatting.",
             )
         await increment_free_messages(user_id)
+
+    # Primary cost cap check — must happen before StreamingResponse is created so
+    # a 429 is returned cleanly. Raising inside the generator after headers are
+    # sent would just close the connection with no useful error to the client.
+    await check_cost_cap(user_id)
 
     return StreamingResponse(
         stream_chat(user_id, brain, body.message, body.conversation_id),

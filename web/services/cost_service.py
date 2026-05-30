@@ -5,13 +5,14 @@ from fastapi import HTTPException
 
 from ..db import get_supabase
 
-# Claude Sonnet 4.6 pricing — USD per million tokens
-# Verify against https://www.anthropic.com/pricing before launch (task 7.3)
+# Claude Sonnet 4.6 pricing — USD per million tokens.
+# MUST re-verify against https://www.anthropic.com/pricing the day before launch (plan task 7.3).
+# Current values verified: 2026-05-31
 MODEL = "claude-sonnet-4-6"
-INPUT_COST_PER_M = 3.00
-OUTPUT_COST_PER_M = 15.00
-CACHE_WRITE_COST_PER_M = 3.75
-CACHE_READ_COST_PER_M = 0.30
+INPUT_COST_PER_M = 3.00        # $3.00 / 1M input tokens
+OUTPUT_COST_PER_M = 15.00      # $15.00 / 1M output tokens
+CACHE_WRITE_COST_PER_M = 3.75  # $3.75 / 1M cache-write tokens
+CACHE_READ_COST_PER_M = 0.30   # $0.30 / 1M cache-read tokens
 
 
 def _compute_cost(input_tokens: int, output_tokens: int, cache_read_tokens: int, cache_write_tokens: int) -> float:

@@ -6,6 +6,8 @@ from uuid import UUID
 
 import anthropic
 
+from fastapi import HTTPException
+
 from ..brain_registry import Brain
 from ..db import get_supabase
 from .cost_service import MODEL, check_cost_cap, log_usage
@@ -53,7 +55,13 @@ async def stream_chat(
     conversation_id: UUID | None,
     history: list[dict] | None = None,
 ) -> AsyncGenerator[str, None]:
-    await check_cost_cap(user_id)
+    # Defence-in-depth cap check — the router already checked before creating
+    # the StreamingResponse, but guard here too in case this is called directly.
+    try:
+        await check_cost_cap(user_id)
+    except HTTPException as e:
+        yield f"data: {json.dumps({'type': 'monthly_cost_cap_exceeded', 'message': e.detail})}\n\n"
+        return
 
     conv_id = await _get_or_create_conversation(user_id, brain.slug, conversation_id)
 

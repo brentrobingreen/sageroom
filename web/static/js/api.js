@@ -118,6 +118,8 @@ export async function streamChat({ brainSlug, message, conversationId, onToken, 
               onToken(data.text, currentConversationId);
             } else if (data.type === "done") {
               onDone(data.conversation_id || currentConversationId);
+            } else if (data.type === "monthly_cost_cap_exceeded") {
+              onError(data.message || "You've reached your AI usage limit for this month.");
             } else if (data.type === "error") {
               onError(data.message || "An error occurred during streaming.");
             }
