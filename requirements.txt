@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+anthropic>=0.40.0
+supabase>=2.0.0
+stripe
+python-dotenv
+slowapi
+httpx
+pydantic>=2.0.0
+pytest
+pytest-asyncio
