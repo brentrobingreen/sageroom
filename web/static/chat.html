@@ -92,7 +92,27 @@
   </div>
 </div>
 
+<!-- Payment failure banner (hidden until billing status checked) -->
+<div id="past-due-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:90;background:#7f1d1d;color:#fecaca;padding:0.625rem 1.25rem;font-size:0.875rem;display:none;align-items:center;justify-content:center;gap:1rem;text-align:center">
+  <span>Your last payment failed. Update your payment method to keep access.</span>
+  <button onclick="openPortal()" style="background:#fecaca;color:#7f1d1d;border:none;border-radius:6px;padding:0.25rem 0.75rem;font-size:0.8125rem;font-weight:600;cursor:pointer;white-space:nowrap">Update now</button>
+</div>
+
 <script src="/config.js"></script>
+<script type="module">
+  import { getBillingStatus, openBillingPortal } from "/js/api.js";
+  window.openPortal = openBillingPortal;
+
+  // Check billing status silently on load — show banner only if past_due
+  getBillingStatus().then(s => {
+    if (s.status === "past_due") {
+      const banner = document.getElementById("past-due-banner");
+      banner.style.display = "flex";
+      // Push chat layout down so banner doesn't overlap topbar
+      document.querySelector(".chat-layout").style.paddingTop = banner.offsetHeight + "px";
+    }
+  }).catch(() => { /* non-fatal */ });
+</script>
 <script type="module" src="/js/chat.js"></script>
 </body>
 </html>

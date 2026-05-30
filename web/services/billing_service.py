@@ -102,12 +102,16 @@ async def handle_checkout_complete(session: dict) -> None:
     if not user_id:
         return
     db = await get_supabase()
-    await db.table("user_subscriptions").upsert({
-        "user_id": user_id,
+    update_data = {
         "stripe_customer_id": session.get("customer"),
         "stripe_subscription_id": session.get("subscription"),
         "status": "active",
-    }, on_conflict="user_id").execute()
+    }
+    existing = await db.table("user_subscriptions").select("id").eq("user_id", user_id).execute()
+    if existing.data:
+        await db.table("user_subscriptions").update(update_data).eq("user_id", user_id).execute()
+    else:
+        await db.table("user_subscriptions").insert({"user_id": user_id, **update_data}).execute()
 
 
 async def handle_subscription_updated(sub: dict) -> None:

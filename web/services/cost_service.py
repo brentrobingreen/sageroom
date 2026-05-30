@@ -1,6 +1,5 @@
 import os
 from datetime import datetime, timezone
-from uuid import UUID
 
 from fastapi import HTTPException
 
@@ -50,16 +49,25 @@ async def log_usage(
         "cost_usd": round(cost, 6),
     }).execute()
 
-    await db.table("user_monthly_costs").upsert({
-        "user_id": user_id,
-        "month_year": month_year,
-        "total_cost_usd": cost,
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }, on_conflict="user_id,month_year", count="exact").execute()
+    # Increment the running monthly total — must select first to avoid overwriting
+    existing = await db.table("user_monthly_costs").select("id,total_cost_usd").eq("user_id", user_id).eq("month_year", month_year).execute()
 
-    # Re-fetch to get the true running total after upsert
-    result = await db.table("user_monthly_costs").select("total_cost_usd").eq("user_id", user_id).eq("month_year", month_year).single().execute()
-    return float(result.data["total_cost_usd"]) if result.data else cost
+    if existing.data:
+        new_total = round(float(existing.data[0]["total_cost_usd"]) + cost, 6)
+        await db.table("user_monthly_costs").update({
+            "total_cost_usd": new_total,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", existing.data[0]["id"]).execute()
+    else:
+        new_total = round(cost, 6)
+        await db.table("user_monthly_costs").insert({
+            "user_id": user_id,
+            "month_year": month_year,
+            "total_cost_usd": new_total,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }).execute()
+
+    return new_total
 
 
 async def check_cost_cap(user_id: str) -> None:
