@@ -244,10 +244,15 @@
     btn.innerHTML = '<span class="spinner spinner-sm"></span>';
     try {
       if (activeTab === "signup") {
-        await signUp(email, password);
-        okEl.textContent = "Account created! Check your email to confirm, then sign in.";
-        okEl.classList.remove("hidden");
-        switchTab("signin");
+        const result = await signUp(email, password);
+        if (result.needsConfirmation) {
+          okEl.textContent = "Almost there! Check your inbox for a confirmation link, then come back to sign in.";
+          okEl.classList.remove("hidden");
+          switchTab("signin");
+        } else {
+          // Email confirmation disabled — user is signed in immediately
+          window.location.href = decodeURIComponent(params.get("redirect") || "/chat.html");
+        }
       } else {
         const redirect = params.get("redirect") || "/chat.html";
         await signIn(email, password);

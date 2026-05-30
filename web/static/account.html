@@ -68,11 +68,12 @@
 
 <script src="/config.js"></script>
 <script type="module">
-  import { requireAuth, signOut } from "/js/auth.js";
+  import { requireAuth, setupSessionMonitor, signOut } from "/js/auth.js";
   import { getBillingStatus, startCheckout, openBillingPortal } from "/js/api.js";
 
   async function init() {
     await requireAuth();
+    await setupSessionMonitor();
 
     // Payment success banner
     if (new URLSearchParams(window.location.search).get("payment") === "success") {

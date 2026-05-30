@@ -1,4 +1,4 @@
-import { requireAuth, signOut } from "./auth.js";
+import { requireAuth, setupSessionMonitor, signOut } from "./auth.js";
 import {
   getBrains, getConversations, getMessages, deleteConversation, streamChat
 } from "./api.js";
@@ -32,6 +32,7 @@ const emptyState     = document.getElementById("empty-state");
 // ── Init ─────────────────────────────────────────────────────────────────────
 async function init() {
   await requireAuth();
+  await setupSessionMonitor();
   await Promise.all([loadBrains(), loadConversations()]);
 
   const saved = localStorage.getItem("sageroom_brain");

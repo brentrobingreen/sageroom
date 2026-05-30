@@ -1,4 +1,4 @@
-import { requireAuth } from "./auth.js";
+import { requireAuth, setupSessionMonitor } from "./auth.js";
 import { getBrains, startGroupChat, getGroupSessionStatus, getGroupSession, getGroupSessions } from "./api.js";
 
 let brains = [];
@@ -15,6 +15,7 @@ const loadingArea   = document.getElementById("loading-area");
 
 async function init() {
   await requireAuth();
+  await setupSessionMonitor();
   await Promise.all([loadBrains(), loadPastSessions()]);
 }
 
