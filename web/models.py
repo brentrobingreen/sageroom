@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from datetime import datetime
+from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, field_validator
@@ -7,7 +10,7 @@ from pydantic import BaseModel, field_validator
 class ChatRequest(BaseModel):
     brain_slug: str
     message: str
-    conversation_id: UUID | None = None
+    conversation_id: Optional[UUID] = None
 
     @field_validator("message")
     @classmethod
@@ -47,7 +50,7 @@ class GroupChatRequest(BaseModel):
 class ConversationOut(BaseModel):
     id: UUID
     brain_slug: str
-    title: str | None
+    title: Optional[str] = None
     created_at: datetime
     last_message_at: datetime
 
@@ -63,14 +66,14 @@ class BrainOut(BaseModel):
     id: UUID
     slug: str
     display_name: str
-    tagline: str | None
-    category: str | None
-    avatar_url: str | None
+    tagline: Optional[str] = None
+    category: Optional[str] = None
+    avatar_url: Optional[str] = None
 
 
 class SubscriptionStatusOut(BaseModel):
     status: str
-    current_period_end: datetime | None
+    current_period_end: Optional[datetime] = None
     free_messages_used: int
     monthly_cost_usd: float
 

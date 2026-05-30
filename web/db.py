@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 from supabase import AsyncClient, acreate_client
 
