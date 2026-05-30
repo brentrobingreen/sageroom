@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account — Sageroom</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="/chat.html" class="nav-logo">Sage<span>room</span></a>
+    <a href="/chat.html" class="btn btn-ghost btn-sm">← Back to chat</a>
+  </div>
+</nav>
+
+<div class="container" style="max-width:560px;padding-top:2.5rem;padding-bottom:4rem">
+  <h1 style="font-size:2rem;margin-bottom:2rem">Account</h1>
+
+  <div id="payment-banner" class="alert alert-success hidden" style="margin-bottom:1.5rem">
+    Subscription activated! You now have full access.
+  </div>
+  <div id="error-banner" class="alert alert-error hidden" style="margin-bottom:1.5rem"></div>
+
+  <!-- Subscription -->
+  <div class="card" style="margin-bottom:1.25rem">
+    <h3 style="margin-bottom:1.25rem">Subscription</h3>
+    <div id="sub-loading" style="display:flex;align-items:center;gap:0.75rem">
+      <div class="spinner"></div><span class="text-muted text-sm">Loading…</span>
+    </div>
+    <div id="sub-content" class="hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <div>
+          <div style="font-weight:600;margin-bottom:0.25rem" id="sub-plan"></div>
+          <div class="text-sm text-muted" id="sub-detail"></div>
+        </div>
+        <span id="sub-badge" class="badge"></span>
+      </div>
+      <div id="sub-actions"></div>
+    </div>
+  </div>
+
+  <!-- Usage -->
+  <div class="card" style="margin-bottom:1.25rem">
+    <h3 style="margin-bottom:1.25rem">This month's usage</h3>
+    <div id="usage-loading" style="display:flex;align-items:center;gap:0.75rem">
+      <div class="spinner"></div><span class="text-muted text-sm">Loading…</span>
+    </div>
+    <div id="usage-content" class="hidden" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div>
+        <div class="text-xs text-muted" style="margin-bottom:0.25rem">AI usage cost</div>
+        <div style="font-size:1.5rem;font-weight:700" id="usage-cost">—</div>
+        <div class="text-xs text-muted">of $8.00 cap</div>
+      </div>
+      <div>
+        <div class="text-xs text-muted" style="margin-bottom:0.25rem">Free messages used</div>
+        <div style="font-size:1.5rem;font-weight:700" id="usage-free">—</div>
+        <div class="text-xs text-muted">of 10 lifetime</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sign out -->
+  <button class="btn btn-ghost btn-full" id="signout-btn">Sign out</button>
+</div>
+
+<script src="/config.js"></script>
+<script type="module">
+  import { requireAuth, signOut } from "/js/auth.js";
+  import { getBillingStatus, startCheckout, openBillingPortal } from "/js/api.js";
+
+  async function init() {
+    await requireAuth();
+
+    // Payment success banner
+    if (new URLSearchParams(window.location.search).get("payment") === "success") {
+      document.getElementById("payment-banner").classList.remove("hidden");
+      // Poll a few times to let webhook fire
+      let attempts = 0;
+      const poll = setInterval(async () => {
+        attempts++;
+        try {
+          const s = await getBillingStatus();
+          if (s.status === "active" || attempts >= 5) { clearInterval(poll); loadStatus(s); }
+        } catch (_) { if (attempts >= 5) clearInterval(poll); }
+      }, 2000);
+    }
+
+    await loadStatus();
+  }
+
+  async function loadStatus(cached) {
+    try {
+      const status = cached || await getBillingStatus();
+      renderSubscription(status);
+      renderUsage(status);
+    } catch (e) {
+      document.getElementById("error-banner").textContent = e.message;
+      document.getElementById("error-banner").classList.remove("hidden");
+    }
+  }
+
+  function renderSubscription(s) {
+    document.getElementById("sub-loading").style.display = "none";
+    document.getElementById("sub-content").classList.remove("hidden");
+
+    const badge = document.getElementById("sub-badge");
+    const plan = document.getElementById("sub-plan");
+    const detail = document.getElementById("sub-detail");
+    const actions = document.getElementById("sub-actions");
+
+    if (s.status === "active") {
+      badge.className = "badge badge-green"; badge.textContent = "Active";
+      plan.textContent = "Sageroom — $20/month";
+      detail.textContent = s.current_period_end
+        ? `Renews ${new Date(s.current_period_end).toLocaleDateString()}`
+        : "";
+      actions.innerHTML = `<button class="btn btn-ghost btn-sm" id="portal-btn">Manage subscription</button>`;
+      document.getElementById("portal-btn").onclick = openBillingPortal;
+    } else if (s.status === "past_due") {
+      badge.className = "badge badge-red"; badge.textContent = "Payment failed";
+      plan.textContent = "Sageroom — $20/month";
+      detail.textContent = "Your last payment failed. Update your payment method to continue.";
+      actions.innerHTML = `<button class="btn btn-danger btn-sm" id="portal-btn">Update payment method</button>`;
+      document.getElementById("portal-btn").onclick = openBillingPortal;
+    } else {
+      badge.className = "badge badge-purple"; badge.textContent = "Free";
+      plan.textContent = "Free account";
+      detail.textContent = `${s.free_messages_used} of 10 free messages used`;
+      actions.innerHTML = `<button class="btn btn-primary" id="subscribe-btn">Subscribe — $20/month</button>`;
+      document.getElementById("subscribe-btn").onclick = startCheckout;
+    }
+  }
+
+  function renderUsage(s) {
+    document.getElementById("usage-loading").style.display = "none";
+    const el = document.getElementById("usage-content");
+    el.classList.remove("hidden");
+    el.style.display = "grid";
+    document.getElementById("usage-cost").textContent = `$${(s.monthly_cost_usd || 0).toFixed(2)}`;
+    document.getElementById("usage-free").textContent = s.free_messages_used || 0;
+  }
+
+  document.getElementById("signout-btn").onclick = signOut;
+
+  init().catch(console.error);
+</script>
+</body>
+</html>

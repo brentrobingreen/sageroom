@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -31,10 +32,10 @@ app = FastAPI(title="Sageroom", lifespan=lifespan, docs_url=None, redoc_url=None
 
 # Rate limiting
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, lambda req, exc: __import__("fastapi").responses.JSONResponse(
-    status_code=429,
-    content={"detail": "Too many requests. Please slow down and try again."},
-))
+app.add_exception_handler(
+    RateLimitExceeded,
+    lambda req, exc: JSONResponse(status_code=429, content={"detail": "Too many requests. Please slow down and try again."}),
+)
 app.add_middleware(SlowAPIMiddleware)
 
 # CORS
@@ -53,9 +54,16 @@ app.include_router(chat.router)
 app.include_router(group_chat.router)
 app.include_router(billing.router)
 app.include_router(admin.router)
-
-# Webhook router — no CORS, no auth middleware
 app.include_router(webhooks.router)
+
+
+@app.get("/config.js", include_in_schema=False)
+async def config_js() -> Response:
+    supabase_url = os.environ.get("SUPABASE_URL", "")
+    supabase_anon_key = os.environ.get("SUPABASE_ANON_KEY", "")
+    stripe_pk = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
+    js = f"window.SAGEROOM={{supabaseUrl:{supabase_url!r},supabaseAnonKey:{supabase_anon_key!r},stripePublishableKey:{stripe_pk!r}}};"
+    return Response(content=js, media_type="application/javascript")
 
 
 @app.get("/health")

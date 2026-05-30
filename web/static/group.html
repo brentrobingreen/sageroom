@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Group deliberation — Sageroom</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="/chat.html" class="nav-logo">Sage<span>room</span></a>
+    <a href="/chat.html" class="btn btn-ghost btn-sm">← Back to chat</a>
+  </div>
+</nav>
+
+<div class="container" style="max-width:800px;padding-top:2.5rem;padding-bottom:4rem">
+
+  <div style="margin-bottom:2rem">
+    <div class="badge badge-gold" style="margin-bottom:0.75rem">✦ Group deliberation</div>
+    <h1 style="font-size:clamp(1.75rem,4vw,2.5rem);margin-bottom:0.75rem">Convene the council</h1>
+    <p>Choose 2–4 thinkers to deliberate on your question. Each gives an initial response, then responds to the others. You get a synthesis.</p>
+  </div>
+
+  <!-- Brain selector -->
+  <div class="card" style="margin-bottom:1.5rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+      <h3>Choose your thinkers <span class="text-muted text-sm">(2–4)</span></h3>
+      <span id="selected-count" class="badge badge-purple"></span>
+    </div>
+    <div id="brain-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.875rem"></div>
+  </div>
+
+  <!-- Question -->
+  <div class="card" style="margin-bottom:1.5rem">
+    <h3 style="margin-bottom:0.875rem">Your question</h3>
+    <textarea
+      class="textarea"
+      id="question"
+      rows="4"
+      maxlength="2000"
+      placeholder="What should I focus on to scale my business to $1M revenue? Be specific about the most important leverage points."
+    ></textarea>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem">
+      <p class="text-xs text-muted">Be specific. The more context you give, the better the deliberation.</p>
+      <button class="btn btn-primary" id="submit-btn" disabled>Convene the council ✦</button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading-area" class="hidden"></div>
+
+  <!-- Results -->
+  <div id="results-area" class="hidden"></div>
+
+  <!-- Past sessions -->
+  <div style="margin-top:3rem">
+    <h3 style="margin-bottom:1rem">Past sessions</h3>
+    <div id="sessions-list" style="display:flex;flex-direction:column;gap:0.75rem">
+      <div class="spinner" style="margin:1rem 0"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="/config.js"></script>
+<script type="module" src="/js/group.js"></script>
+</body>
+</html>

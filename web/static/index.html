@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sageroom — Think with the greatest minds</title>
+  <meta name="description" content="Chat with AI versions of the world's most influential thinkers — Tony Robbins, Warren Buffett, Robin Sharma, Steve Jobs. One-on-one or in group deliberation.">
+  <meta property="og:title" content="Sageroom — Think with the greatest minds">
+  <meta property="og:description" content="Get advice from AI versions of Tony Robbins, Warren Buffett, Robin Sharma, and Steve Jobs.">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  <style>
+    .hero { padding: 6rem 0 4rem; text-align: center; }
+    .hero h1 { margin-bottom: 1.25rem; }
+    .hero p { font-size: 1.125rem; max-width: 560px; margin: 0 auto 2.5rem; }
+    .hero-btns { display: flex; gap: 0.875rem; justify-content: center; flex-wrap: wrap; }
+
+    .how-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; margin-top: 2.5rem; }
+    .step-num { width: 40px; height: 40px; border-radius: 50%; background: var(--purple-dim); color: var(--purple-hover); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.125rem; flex-shrink: 0; }
+
+    .brains-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 2rem; }
+    .pricing-card { max-width: 420px; margin: 2rem auto 0; text-align: center; }
+    .price { font-size: 3rem; font-weight: 700; color: var(--text); }
+    .price span { font-size: 1.25rem; font-weight: 400; color: var(--text-muted); }
+    .perks { list-style: none; display: flex; flex-direction: column; gap: 0.625rem; margin: 1.25rem 0; text-align: left; }
+    .perks li::before { content: "✓ "; color: var(--green); font-weight: 600; }
+    .disclaimer { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; font-size: 0.8125rem; color: var(--text-muted); }
+
+    @media (min-width: 600px) { .how-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 768px) { .brains-grid { grid-template-columns: repeat(4, 1fr); } .hero { padding: 8rem 0 5rem; } }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="/" class="nav-logo">Sage<span>room</span></a>
+    <button class="btn btn-ghost btn-sm" id="nav-signin-btn">Sign in</button>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <div class="badge badge-purple" style="margin:0 auto 1.25rem">Private beta — now open</div>
+    <h1>Think with the<br>greatest minds</h1>
+    <p>Get advice, clarity, and strategy from AI versions of the world's most influential thinkers — one-on-one or in a group deliberation session.</p>
+    <div class="hero-btns">
+      <button class="btn btn-primary btn-lg" id="hero-cta-btn">Start for free</button>
+      <button class="btn btn-ghost btn-lg" id="hero-signin-btn">Sign in</button>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section style="background:var(--bg-surface);border-top:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle)">
+  <div class="container">
+    <div class="section-label text-center">How it works</div>
+    <h2 class="text-center">Three steps to a breakthrough</h2>
+    <div class="how-grid">
+      <div class="card" style="display:flex;gap:1rem;align-items:flex-start">
+        <div class="step-num">1</div>
+        <div>
+          <h4>Choose your thinker</h4>
+          <p class="text-sm mt-1">Pick from our curated library of the world's most influential minds.</p>
+        </div>
+      </div>
+      <div class="card" style="display:flex;gap:1rem;align-items:flex-start">
+        <div class="step-num">2</div>
+        <div>
+          <h4>Ask your question</h4>
+          <p class="text-sm mt-1">Bring a real challenge — career, business, mindset, strategy. No question is too big or too small.</p>
+        </div>
+      </div>
+      <div class="card" style="display:flex;gap:1rem;align-items:flex-start">
+        <div class="step-num">3</div>
+        <div>
+          <h4>Convene the council</h4>
+          <p class="text-sm mt-1">Choose 2–4 thinkers to deliberate on your question together and get a synthesised answer.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Brains -->
+<section>
+  <div class="container">
+    <div class="section-label">The sages</div>
+    <h2>Meet the thinkers</h2>
+    <p class="mt-1">Each AI applies the publicly documented frameworks, principles, and strategies of the real person — not a simulation.</p>
+    <div class="brains-grid" id="brains-preview"></div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section style="background:var(--bg-surface);border-top:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle)">
+  <div class="container">
+    <div class="section-label text-center">Pricing</div>
+    <h2 class="text-center">Simple and honest</h2>
+    <div class="pricing-card card">
+      <div class="price">$20 <span>/ month</span></div>
+      <p class="mt-1">Unlimited single-brain chats. Group deliberation sessions. Cancel any time.</p>
+      <ul class="perks">
+        <li>Unlimited one-on-one conversations</li>
+        <li>Group deliberation with up to 4 thinkers</li>
+        <li>Full conversation history saved forever</li>
+        <li>New brains added regularly</li>
+      </ul>
+      <button class="btn btn-primary btn-lg btn-full" id="pricing-cta-btn">Get started — free trial</button>
+      <p class="text-xs text-muted mt-2">10 free messages included. No credit card required to start.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Disclaimer -->
+<section>
+  <div class="container">
+    <div class="disclaimer">
+      <strong>AI disclaimer:</strong> Sageroom AI applies the publicly documented frameworks and principles of real public figures — it is not affiliated with, endorsed by, or a simulation of those individuals. Responses are generated by AI and should not be taken as professional advice. Always seek qualified professionals for legal, financial, medical, or other serious decisions.
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer style="border-top:1px solid var(--border-subtle);padding:2rem 0">
+  <div class="container flex justify-between items-center" style="flex-wrap:wrap;gap:1rem">
+    <span class="nav-logo">Sage<span>room</span></span>
+    <div style="display:flex;gap:1.5rem">
+      <a href="/terms.html" class="text-sm text-muted">Terms</a>
+      <a href="/privacy.html" class="text-sm text-muted">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Auth Modal -->
+<div class="modal-backdrop hidden" id="auth-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Welcome to Sageroom</span>
+      <button class="modal-close" id="modal-close-btn">×</button>
+    </div>
+    <div class="tabs">
+      <div class="tab active" id="tab-signup" onclick="switchTab('signup')">Create account</div>
+      <div class="tab" id="tab-signin" onclick="switchTab('signin')">Sign in</div>
+    </div>
+    <div id="auth-error" class="alert alert-error hidden"></div>
+    <div id="auth-success" class="alert alert-success hidden"></div>
+    <div class="form-group">
+      <label class="form-label" for="auth-email">Email</label>
+      <input class="input" type="email" id="auth-email" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="auth-password">Password</label>
+      <input class="input" type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary btn-full" id="auth-submit-btn">Create account</button>
+    <p class="text-xs text-muted text-center">By continuing you agree to our <a href="/terms.html">Terms</a> and <a href="/privacy.html">Privacy Policy</a>.</p>
+  </div>
+</div>
+
+<script src="/config.js"></script>
+<script type="module">
+  import { signUp, signIn, getSession } from "/js/auth.js";
+  import { getBrains } from "/js/api.js";
+
+  let activeTab = "signup";
+
+  // Check if already signed in
+  getSession().then(session => {
+    if (session) {
+      document.getElementById("nav-signin-btn").textContent = "Go to app";
+      document.getElementById("nav-signin-btn").onclick = () => window.location.href = "/chat.html";
+      document.getElementById("hero-cta-btn").textContent = "Open app";
+      document.getElementById("hero-cta-btn").onclick = () => window.location.href = "/chat.html";
+      document.getElementById("hero-signin-btn").classList.add("hidden");
+      document.getElementById("pricing-cta-btn").textContent = "Open app";
+      document.getElementById("pricing-cta-btn").onclick = () => window.location.href = "/chat.html";
+    }
+  });
+
+  // Check URL for auth=signin
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("auth") === "signin") { openModal("signin"); }
+
+  // Load brain previews
+  getBrains().catch(() => []).then(b => {
+    const grid = document.getElementById("brains-preview");
+    (b || []).forEach(brain => {
+      grid.innerHTML += `
+        <div class="brain-card">
+          <div class="brain-card-header">
+            <img class="brain-avatar" src="/images/${brain.slug}.svg" alt="${brain.display_name}" onerror="this.src='/images/default.svg'">
+            <div>
+              <div class="brain-card-name">${brain.display_name}</div>
+              <div class="brain-card-tagline">${brain.tagline || ""}</div>
+            </div>
+          </div>
+        </div>`;
+    });
+    if (!b?.length) {
+      grid.innerHTML = `
+        <div class="brain-card"><div class="brain-card-header"><img class="brain-avatar" src="/images/tony_robbins.svg" alt=""><div><div class="brain-card-name">Tony Robbins</div><div class="brain-card-tagline">Peak performance &amp; human psychology</div></div></div></div>
+        <div class="brain-card"><div class="brain-card-header"><img class="brain-avatar" src="/images/warren_buffett.svg" alt=""><div><div class="brain-card-name">Warren Buffett</div><div class="brain-card-tagline">Value investing &amp; long-term thinking</div></div></div></div>
+        <div class="brain-card"><div class="brain-card-header"><img class="brain-avatar" src="/images/robin_sharma.svg" alt=""><div><div class="brain-card-name">Robin Sharma</div><div class="brain-card-tagline">Leadership &amp; mastery</div></div></div></div>
+        <div class="brain-card"><div class="brain-card-header"><img class="brain-avatar" src="/images/steve_jobs.svg" alt=""><div><div class="brain-card-name">Steve Jobs</div><div class="brain-card-tagline">Vision, design &amp; building the future</div></div></div></div>
+      `;
+    }
+  });
+
+  window.openModal = function(tab = "signup") {
+    document.getElementById("auth-modal").classList.remove("hidden");
+    switchTab(tab);
+    setTimeout(() => document.getElementById("auth-email").focus(), 50);
+  };
+
+  window.switchTab = function(tab) {
+    activeTab = tab;
+    document.getElementById("tab-signup").classList.toggle("active", tab === "signup");
+    document.getElementById("tab-signin").classList.toggle("active", tab === "signin");
+    document.getElementById("auth-submit-btn").textContent = tab === "signup" ? "Create account" : "Sign in";
+    document.getElementById("modal-title").textContent = tab === "signup" ? "Welcome to Sageroom" : "Sign in";
+    document.getElementById("auth-error").classList.add("hidden");
+    document.getElementById("auth-success").classList.add("hidden");
+  };
+
+  document.getElementById("modal-close-btn").onclick = () => document.getElementById("auth-modal").classList.add("hidden");
+  document.getElementById("auth-modal").addEventListener("click", e => { if (e.target === document.getElementById("auth-modal")) document.getElementById("auth-modal").classList.add("hidden"); });
+
+  document.getElementById("nav-signin-btn").onclick = () => openModal("signin");
+  document.getElementById("hero-cta-btn").onclick = () => openModal("signup");
+  document.getElementById("hero-signin-btn").onclick = () => openModal("signin");
+  document.getElementById("pricing-cta-btn").onclick = () => openModal("signup");
+
+  document.getElementById("auth-submit-btn").onclick = async () => {
+    const email = document.getElementById("auth-email").value.trim();
+    const password = document.getElementById("auth-password").value;
+    const errEl = document.getElementById("auth-error");
+    const okEl = document.getElementById("auth-success");
+    errEl.classList.add("hidden");
+    okEl.classList.add("hidden");
+    const btn = document.getElementById("auth-submit-btn");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner spinner-sm"></span>';
+    try {
+      if (activeTab === "signup") {
+        await signUp(email, password);
+        okEl.textContent = "Account created! Check your email to confirm, then sign in.";
+        okEl.classList.remove("hidden");
+        switchTab("signin");
+      } else {
+        const redirect = params.get("redirect") || "/chat.html";
+        await signIn(email, password);
+        window.location.href = decodeURIComponent(redirect);
+      }
+    } catch (e) {
+      errEl.textContent = e.message;
+      errEl.classList.remove("hidden");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = activeTab === "signup" ? "Create account" : "Sign in";
+    }
+  };
+
+  document.getElementById("auth-password").addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("auth-submit-btn").click();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat — Sageroom</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+</head>
+<body style="overflow:hidden">
+
+<div class="chat-layout">
+
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section" style="display:flex;align-items:center;justify-content:space-between;padding:0.875rem 1rem">
+      <a href="/" class="nav-logo" style="font-size:1.125rem">Sage<span>room</span></a>
+      <button id="new-chat-btn" class="btn btn-ghost btn-sm" title="New chat">+ New</button>
+    </div>
+
+    <div class="sidebar-section" style="flex:0 0 auto">
+      <div class="sidebar-label">Thinkers</div>
+      <div id="brain-list" class="flex flex-col gap-1"></div>
+    </div>
+
+    <div class="sidebar-section" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+      <div class="sidebar-label">Recent</div>
+      <div id="conv-list" class="sidebar-list"></div>
+    </div>
+
+    <div class="sidebar-section" style="border-top:1px solid var(--border-subtle)">
+      <button id="signout-btn" class="btn btn-ghost btn-sm btn-full" style="justify-content:flex-start">Sign out</button>
+      <a href="/account.html" class="btn btn-ghost btn-sm btn-full" style="justify-content:flex-start;margin-top:4px">Account &amp; billing</a>
+      <a href="/group.html" class="btn btn-ghost btn-sm btn-full" style="justify-content:flex-start;margin-top:4px">✦ Group deliberation</a>
+    </div>
+  </aside>
+
+  <!-- Main chat area -->
+  <main class="chat-main">
+    <div class="chat-topbar">
+      <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
+      <img class="brain-avatar" id="topbar-avatar" src="/images/default.svg" alt="" style="width:36px;height:36px" onerror="this.src='/images/default.svg'">
+      <div>
+        <div class="chat-topbar-brain" id="topbar-name">Select a thinker</div>
+        <div class="chat-topbar-tagline" id="topbar-tagline"></div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="empty-state" style="flex:1;display:flex;align-items:center;justify-content:center;padding:2rem;text-align:center">
+      <div>
+        <div style="font-size:3rem;margin-bottom:1rem">✦</div>
+        <h3 style="margin-bottom:0.5rem">What would you like to explore?</h3>
+        <p class="text-sm">Select a thinker from the sidebar and ask anything.</p>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="chat-messages" id="messages" style="display:none">
+      <div class="chat-messages-inner" id="messages-inner"></div>
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input-area">
+      <div class="chat-input-inner">
+        <textarea
+          class="chat-input"
+          id="chat-input"
+          rows="1"
+          placeholder="Ask anything…"
+          maxlength="2000"
+        ></textarea>
+        <button class="send-btn" id="send-btn" disabled title="Send">↑</button>
+      </div>
+      <p class="text-xs text-muted text-center mt-1">This AI applies publicly documented frameworks — not the actual person. Not professional advice.</p>
+    </div>
+  </main>
+</div>
+
+<!-- Paywall overlay -->
+<div class="paywall-overlay hidden" id="paywall-overlay">
+  <div class="paywall-card">
+    <div style="font-size:2.5rem">✦</div>
+    <h2>You've used your 10 free messages</h2>
+    <p>Subscribe to continue chatting with unlimited conversations and group deliberation sessions.</p>
+    <div style="font-size:2rem;font-weight:700;color:var(--text)">$20<span style="font-size:1rem;color:var(--text-muted)">/month</span></div>
+    <button class="btn btn-primary btn-lg btn-full" id="subscribe-btn">Subscribe now</button>
+    <a href="/" class="text-sm text-muted">Back to home</a>
+  </div>
+</div>
+
+<script src="/config.js"></script>
+<script type="module" src="/js/chat.js"></script>
+</body>
+</html>
