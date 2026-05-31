@@ -4,6 +4,8 @@
 
 import { getToken, signOut } from "./auth.js";
 
+export { getToken };
+
 export async function apiFetch(path, options = {}) {
   const token = await getToken();
   const headers = {

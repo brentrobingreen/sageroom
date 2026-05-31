@@ -72,7 +72,7 @@ async def create_group_session(
         "user_id": user_id,
         "brain_slugs": body.brain_slugs,
         "question": body.question,
-        "status": "active",
+        "status": "pending",
     }).execute()
 
     return {"session_id": result.data[0]["id"]}
