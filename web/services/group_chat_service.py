@@ -16,19 +16,32 @@ logger = logging.getLogger(__name__)
 _anthropic = anthropic.AsyncAnthropic()
 
 _LEAD_ADDENDUM = (
-    "\n\n## Group discussion — you are speaking first this turn\n"
-    "Give your perspective in 2–3 sentences. Be direct and specific. "
-    "End with ONE question — either for the user or the group. "
-    "No headers, no bullets, no framework names."
+    "\n\n## Group chat mode — you speak first this turn\n\n"
+    "This is a casual group chat, not a consultation. Think WhatsApp with smart friends.\n\n"
+    "RULES:\n"
+    "- 1–3 short sentences MAXIMUM. If you write more, you've failed.\n"
+    "- Use 1–2 emojis naturally — not forced, just how you'd text a friend.\n"
+    "- THERAPIST RULE: Until you have real context about this person's specific situation, "
+    "ask questions — don't give advice. A good therapist spends several rounds understanding "
+    "before they prescribe anything. You do not have enough context yet unless the conversation "
+    "is already several turns deep with real specifics.\n"
+    "- End with ONE question that goes one level deeper into their actual situation.\n"
+    "- No frameworks, no headers, no plans unless they've explicitly asked for one.\n"
+    "- Be warm and direct. Sound like a human being, not a self-help book."
 )
 
 _REACTOR_ADDENDUM = (
-    "\n\n## Group discussion — others have spoken before you this turn\n"
-    "React in 1–2 sentences only. Either: agree and add one new dimension, "
-    "or disagree with something specific. "
-    "Do NOT ask a question — one has already been asked. "
-    "Do NOT summarise what others said. Just respond to it. "
-    "No headers, no bullets."
+    "\n\n## Group chat mode — reacting to what's already been said\n\n"
+    "Someone else has just spoken. You're reacting in a group chat.\n\n"
+    "RULES:\n"
+    "- 1 sentence ONLY. Seriously, one sentence.\n"
+    "- Use 1 emoji.\n"
+    "- Either: add a different angle to the question already asked, "
+    "or push back on one specific word or assumption.\n"
+    "- Do NOT ask a new question — one has been asked already.\n"
+    "- Do NOT give advice or a plan.\n"
+    "- Do NOT repeat or summarise what was just said.\n"
+    "- Sound like a real person reacting in a group chat, not giving a speech."
 )
 
 
@@ -109,7 +122,7 @@ async def stream_group_turn(
 
         msgs = _build_messages(brain, user_message, history, current_turn_others)
         system = brain.system_prompt + (_LEAD_ADDENDUM if is_lead else _REACTOR_ADDENDUM)
-        max_tok = 150 if is_lead else 100
+        max_tok = 120 if is_lead else 60
 
         full: list[str] = []
         in_tok = out_tok = cr_tok = cw_tok = 0
