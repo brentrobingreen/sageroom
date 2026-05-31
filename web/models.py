@@ -47,6 +47,20 @@ class GroupChatRequest(BaseModel):
         return v
 
 
+class GroupMessageRequest(BaseModel):
+    message: str
+
+    @field_validator("message")
+    @classmethod
+    def message_not_empty(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("message cannot be empty")
+        if len(v) > 2000:
+            raise ValueError("message cannot exceed 2000 characters")
+        return v
+
+
 class ConversationOut(BaseModel):
     id: UUID
     brain_slug: str

@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/brains", tags=["brains"])
 
 @router.get("", response_model=list[BrainOut])
 @limiter.limit("60/minute")
-async def list_brains(request: Request, _: dict = Depends(get_current_user)) -> list[BrainOut]:
+async def list_brains(request: Request) -> list[BrainOut]:
     return await get_all_brains()
 
 

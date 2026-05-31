@@ -15,7 +15,10 @@ export async function apiFetch(path, options = {}) {
   const res = await fetch(path, { ...options, headers });
 
   if (res.status === 401) {
-    await signOut();
+    if (token) {
+      // Had a token but server rejected it — session expired, force re-login
+      await signOut();
+    }
     throw new Error("Session expired. Please sign in again.");
   }
 

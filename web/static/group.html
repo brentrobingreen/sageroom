@@ -10,62 +10,92 @@
   <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/css/main.css">
 </head>
-<body>
+<body style="overflow:hidden">
 
-<nav class="nav">
-  <div class="container nav-inner">
-    <a href="/chat.html" class="nav-logo">Sage<span>room</span></a>
-    <a href="/chat.html" class="btn btn-ghost btn-sm">← Back to chat</a>
-  </div>
-</nav>
-
-<div class="container" style="max-width:800px;padding-top:2.5rem;padding-bottom:4rem">
-
-  <div style="margin-bottom:2rem">
-    <div class="badge badge-gold" style="margin-bottom:0.75rem">✦ Group deliberation</div>
-    <h1 style="font-size:clamp(1.75rem,4vw,2.5rem);margin-bottom:0.75rem">Convene the council</h1>
-    <p>Choose 2–4 thinkers to deliberate on your question. Each gives an initial response, then responds to the others. You get a synthesis.</p>
-  </div>
-
-  <!-- Brain selector -->
-  <div class="card" style="margin-bottom:1.5rem">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
-      <h3>Choose your thinkers <span class="text-muted text-sm">(2–4)</span></h3>
-      <span id="selected-count" class="badge badge-purple"></span>
+<!-- ── Setup view ────────────────────────────────────────────────────────── -->
+<div id="setup-view" style="height:100dvh;overflow-y:auto;display:flex;flex-direction:column">
+  <nav class="nav" style="flex-shrink:0">
+    <div class="container nav-inner">
+      <a href="/chat.html" class="nav-logo">Sage<span>room</span></a>
+      <a href="/chat.html" class="btn btn-ghost btn-sm">← Back to chat</a>
     </div>
-    <div id="brain-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.875rem"></div>
-  </div>
+  </nav>
 
-  <!-- Question -->
-  <div class="card" style="margin-bottom:1.5rem">
-    <h3 style="margin-bottom:0.875rem">Your question</h3>
-    <textarea
-      class="textarea"
-      id="question"
-      rows="4"
-      maxlength="2000"
-      placeholder="What should I focus on to scale my business to $1M revenue? Be specific about the most important leverage points."
-    ></textarea>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem">
-      <p class="text-xs text-muted">Be specific. The more context you give, the better the deliberation.</p>
-      <button class="btn btn-primary" id="submit-btn" disabled>Convene the council ✦</button>
+  <div class="container" style="max-width:720px;padding-top:2.5rem;padding-bottom:4rem;flex:1">
+    <div style="margin-bottom:2rem">
+      <div class="badge badge-gold" style="margin-bottom:0.75rem">✦ Group deliberation</div>
+      <h1 style="font-size:clamp(1.75rem,4vw,2.5rem);margin-bottom:0.75rem">Convene the council</h1>
+      <p>Choose 2–4 thinkers, ask your question, and have a real back-and-forth discussion. Synthesise when you're ready.</p>
     </div>
-  </div>
 
-  <!-- Loading -->
-  <div id="loading-area" class="hidden"></div>
+    <div class="card" style="margin-bottom:1.5rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+        <h3>Choose your thinkers <span class="text-muted text-sm">(2–4)</span></h3>
+        <span id="selected-count" class="badge badge-purple"></span>
+      </div>
+      <div id="brain-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.875rem"></div>
+    </div>
 
-  <!-- Results -->
-  <div id="results-area" class="hidden"></div>
+    <div class="card" style="margin-bottom:1.5rem">
+      <h3 style="margin-bottom:0.875rem">Opening question</h3>
+      <textarea class="textarea" id="opening-question" rows="4" maxlength="2000"
+        placeholder="What should I focus on to reach financial independence in 10 years?"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem">
+        <p class="text-xs text-muted">Be specific — it produces better deliberation.</p>
+        <button class="btn btn-primary" id="convene-btn" disabled>Convene the council ✦</button>
+      </div>
+    </div>
 
-  <!-- Past sessions -->
-  <div style="margin-top:3rem">
-    <h3 style="margin-bottom:1rem">Past sessions</h3>
-    <div id="sessions-list" style="display:flex;flex-direction:column;gap:0.75rem">
-      <div class="spinner" style="margin:1rem 0"></div>
+    <!-- Past sessions -->
+    <div style="margin-top:2.5rem">
+      <h3 style="margin-bottom:1rem">Past sessions</h3>
+      <div id="sessions-list" style="display:flex;flex-direction:column;gap:0.75rem">
+        <div class="spinner" style="margin:1rem 0"></div>
+      </div>
     </div>
   </div>
+</div>
 
+<!-- ── Chat view ─────────────────────────────────────────────────────────── -->
+<div id="chat-view" class="hidden" style="height:100dvh;display:flex;flex-direction:column">
+
+  <!-- Topbar -->
+  <div class="group-topbar">
+    <div id="topbar-brains" style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;flex:1"></div>
+    <button id="new-council-btn" class="btn btn-ghost btn-sm" style="flex-shrink:0">New council</button>
+  </div>
+
+  <!-- Messages -->
+  <div id="group-messages" class="group-messages">
+    <div id="group-messages-inner" class="group-messages-inner"></div>
+  </div>
+
+  <!-- Input -->
+  <div class="group-input-area">
+    <div class="group-input-row">
+      <textarea class="chat-input" id="group-input" rows="1"
+        placeholder="Ask a follow-up or push back…" maxlength="2000" disabled></textarea>
+      <button class="send-btn" id="group-send-btn" disabled title="Send">↑</button>
+    </div>
+    <div class="group-input-actions">
+      <p class="text-xs text-muted" style="flex:1">This AI applies publicly documented frameworks — not the actual people.</p>
+      <button class="btn btn-ghost btn-sm" id="synthesize-btn" disabled>✦ Synthesize</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Synthesis modal ───────────────────────────────────────────────────── -->
+<div id="synthesis-modal" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:680px;max-height:85dvh;overflow-y:auto">
+    <div class="modal-header" style="flex-shrink:0">
+      <span class="modal-title">✦ Council synthesis</span>
+      <button class="modal-close" id="synthesis-close">×</button>
+    </div>
+    <div id="synthesis-loading" style="display:flex;align-items:center;gap:0.75rem;padding:1rem 0">
+      <div class="spinner"></div><span class="text-muted text-sm">Synthesising…</span>
+    </div>
+    <div id="synthesis-content" class="synthesis-doc hidden"></div>
+  </div>
 </div>
 
 <script src="/config.js"></script>

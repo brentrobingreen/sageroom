@@ -96,7 +96,7 @@ async def stream_chat(
     try:
         async with _anthropic.messages.stream(
             model=MODEL,
-            max_tokens=2048,
+            max_tokens=600,
             system=brain.system_prompt,
             messages=messages,
         ) as stream:
