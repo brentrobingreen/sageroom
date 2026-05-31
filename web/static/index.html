@@ -159,6 +159,17 @@
   </div>
 </div>
 
+<!-- Cookie consent — shown once, functional cookies only -->
+<div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:400;background:var(--bg-surface);border-top:1px solid var(--border);padding:1rem 1.25rem">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+    <p class="text-sm" style="color:var(--text-secondary);margin:0;flex:1">
+      We use essential cookies for authentication only — no tracking or advertising.
+      <a href="/privacy.html" style="color:var(--purple)">Learn more</a>
+    </p>
+    <button class="btn btn-primary btn-sm" id="cookie-accept-btn" style="flex-shrink:0">Got it</button>
+  </div>
+</div>
+
 <script src="/config.js"></script>
 <script type="module">
   import { signUp, signIn, getSession } from "/js/auth.js";
@@ -270,6 +281,15 @@
   document.getElementById("auth-password").addEventListener("keydown", e => {
     if (e.key === "Enter") document.getElementById("auth-submit-btn").click();
   });
+
+  // Cookie consent — show once
+  if (!localStorage.getItem("sageroom_cookies_accepted")) {
+    document.getElementById("cookie-banner").style.display = "block";
+  }
+  document.getElementById("cookie-accept-btn").onclick = () => {
+    localStorage.setItem("sageroom_cookies_accepted", "1");
+    document.getElementById("cookie-banner").style.display = "none";
+  };
 </script>
 </body>
 </html>

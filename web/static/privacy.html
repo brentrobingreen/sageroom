@@ -18,54 +18,109 @@
 
 <div class="container" style="max-width:720px;padding-top:3rem;padding-bottom:5rem">
   <h1 style="margin-bottom:0.5rem">Privacy Policy</h1>
-  <p class="text-sm text-muted" style="margin-bottom:3rem">Last updated: 31 May 2026 · Australian Privacy Principles (Privacy Act 1988)</p>
+  <p class="text-sm text-muted" style="margin-bottom:3rem">Last updated: 31 May 2026 · Australian Privacy Principles (Privacy Act 1988 (Cth))</p>
 
   <div style="display:flex;flex-direction:column;gap:2rem">
 
     <div>
       <h2 style="font-size:1.25rem;margin-bottom:0.75rem">1. Who we are</h2>
-      <p>Sageroom is operated from Australia. This policy explains how we collect, use, and protect your personal information in accordance with the Australian Privacy Principles (APPs) under the Privacy Act 1988 (Cth).</p>
+      <p>Sageroom ("we", "us", "our") is operated from Queensland, Australia. This Privacy Policy explains how we collect, use, disclose, and protect your personal information in accordance with the Australian Privacy Principles (APPs) under the Privacy Act 1988 (Cth).</p>
+      <p class="mt-1">By using Sageroom, you consent to the practices described in this policy.</p>
     </div>
 
     <div>
-      <h2 style="font-size:1.25rem;margin-bottom:0.75rem">2. What we collect</h2>
-      <p>We collect your email address when you create an account. We store your conversation history and group session content so you can access it later. We record AI usage data (token counts and cost) to enforce fair-use limits and manage costs. We do not collect your name, phone number, or payment card details directly — card processing is handled by Stripe.</p>
+      <h2 style="font-size:1.25rem;margin-bottom:0.75rem">2. Information we collect</h2>
+      <p><strong>Account information:</strong> Your email address when you register.</p>
+      <p class="mt-1"><strong>Conversation content:</strong> The questions and prompts you submit, and the AI-generated responses. This content is stored so you can access your conversation history.</p>
+      <p class="mt-1"><strong>Usage data:</strong> Token counts and cost per API call, used to enforce fair-use limits and manage AI costs. Session metadata (timestamps, brain selected) used for monitoring and billing.</p>
+      <p class="mt-1"><strong>Billing data:</strong> We do not store your payment card details. Stripe processes payments and stores card information under their own privacy policy.</p>
+      <p class="mt-1"><strong>Technical data:</strong> IP address and request metadata logged by our infrastructure for security and diagnostics. We never log the content of your messages in application logs.</p>
     </div>
 
     <div>
       <h2 style="font-size:1.25rem;margin-bottom:0.75rem">3. How we use your information</h2>
-      <p>We use your email to authenticate your account and send you service-related notifications. Conversation content is used solely to provide the service — it is not used to train AI models. Usage data is used to enforce per-user cost limits and generate internal reports.</p>
+      <ul style="padding-left:1.25rem;display:flex;flex-direction:column;gap:0.375rem">
+        <li>To authenticate your account and maintain your session</li>
+        <li>To deliver AI responses to your questions</li>
+        <li>To store and display your conversation history</li>
+        <li>To enforce per-user AI cost limits ($8.00 AUD/month)</li>
+        <li>To process subscription payments via Stripe</li>
+        <li>To send you service-related emails (account confirmation, billing receipts, material changes to these policies)</li>
+        <li>To monitor platform health and security</li>
+      </ul>
+      <p class="mt-1">We do not use your conversation content to train AI models, for advertising, or for any purpose beyond delivering the service.</p>
     </div>
 
     <div>
       <h2 style="font-size:1.25rem;margin-bottom:0.75rem">4. Third-party processors</h2>
-      <p>We share data with the following third parties to operate the service:</p>
-      <ul style="margin-top:0.75rem;padding-left:1.25rem;display:flex;flex-direction:column;gap:0.5rem">
-        <li><strong>Anthropic</strong> — AI responses are generated via Anthropic's API. Your messages are sent to Anthropic's servers to produce responses. See <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener">Anthropic's Privacy Policy</a>.</li>
-        <li><strong>Supabase</strong> — We use Supabase to store your account data and conversation history. Data is stored in Australia or the US depending on your selected Supabase region.</li>
-        <li><strong>Stripe</strong> — Subscription billing is handled by Stripe. We share your email with Stripe for billing purposes. See <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe's Privacy Policy</a>.</li>
-        <li><strong>Railway</strong> — Our application servers run on Railway. Application logs may contain metadata (not message content) about your requests.</li>
+      <p>We share data with the following parties solely to operate the service. Each is bound by their own privacy policies:</p>
+      <ul style="margin-top:0.75rem;padding-left:1.25rem;display:flex;flex-direction:column;gap:0.625rem">
+        <li><strong>Anthropic</strong> — Your messages are transmitted to Anthropic's API to generate AI responses. Anthropic's data handling is governed by their <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener">Privacy Policy</a>. Anthropic does not train models on API inputs by default.</li>
+        <li><strong>Supabase</strong> — Stores your account data, conversation history, and usage records. Data may be stored in the US or Australia depending on your Supabase region. See <a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase's Privacy Policy</a>.</li>
+        <li><strong>Stripe</strong> — Processes subscription payments. Your email is shared with Stripe for billing purposes. Stripe stores your payment card details. See <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe's Privacy Policy</a>.</li>
+        <li><strong>Railway</strong> — Hosts our application servers. Application logs (containing request metadata, never message content) are retained by Railway. See <a href="https://railway.app/legal/privacy" target="_blank" rel="noopener">Railway's Privacy Policy</a>.</li>
       </ul>
+      <p class="mt-1">We do not sell your personal information to any third party.</p>
     </div>
 
     <div>
-      <h2 style="font-size:1.25rem;margin-bottom:0.75rem">5. Data retention</h2>
-      <p>Your conversations are stored indefinitely so you can access your history. You may delete your account at any time, which permanently removes all your data within 30 days. We retain billing records for 7 years as required by Australian tax law.</p>
+      <h2 style="font-size:1.25rem;margin-bottom:0.75rem">5. International data transfers</h2>
+      <p>Some of our processors (Anthropic, Stripe, Railway) may store or process your data outside Australia, primarily in the United States. We take reasonable steps to ensure these processors provide adequate data protection. By using Sageroom, you consent to this transfer.</p>
     </div>
 
     <div>
-      <h2 style="font-size:1.25rem;margin-bottom:0.75rem">6. Your rights</h2>
-      <p>Under the Australian Privacy Principles you have the right to access, correct, and request deletion of your personal information. To exercise these rights, email <a href="mailto:privacy@sageroom.com">privacy@sageroom.com</a>. You may also delete your account directly from the account page, which triggers deletion of all personal data.</p>
+      <h2 style="font-size:1.25rem;margin-bottom:0.75rem">6. Cookies and local storage</h2>
+      <p>Sageroom uses browser local storage to store your authentication session token. This is essential for the service to function — without it, you would be logged out on every page load. We do not use advertising cookies, tracking pixels, or analytics cookies. No third-party cookies are set by Sageroom.</p>
     </div>
 
     <div>
-      <h2 style="font-size:1.25rem;margin-bottom:0.75rem">7. Notifiable data breaches</h2>
-      <p>In the event of an eligible data breach under the Privacy Act 1988, we will notify the Office of the Australian Information Commissioner (OAIC) and affected individuals within 30 days of becoming aware of the breach.</p>
+      <h2 style="font-size:1.25rem;margin-bottom:0.75rem">7. Data retention</h2>
+      <p><strong>Conversation history:</strong> Retained indefinitely so you can access your history. Deleted immediately when you delete your account.</p>
+      <p class="mt-1"><strong>Billing records:</strong> Retained for 7 years as required by Australian tax law, even after account deletion.</p>
+      <p class="mt-1"><strong>Application logs:</strong> Retained for 30 days by Railway, after which they are automatically deleted.</p>
     </div>
 
     <div>
-      <h2 style="font-size:1.25rem;margin-bottom:0.75rem">8. Contact</h2>
-      <p>Privacy questions or complaints: <a href="mailto:privacy@sageroom.com">privacy@sageroom.com</a>. If we do not resolve your complaint satisfactorily, you may contact the OAIC at <a href="https://www.oaic.gov.au" target="_blank" rel="noopener">oaic.gov.au</a>.</p>
+      <h2 style="font-size:1.25rem;margin-bottom:0.75rem">8. Security</h2>
+      <p>We implement reasonable technical and organisational measures to protect your data, including encrypted connections (HTTPS), row-level security on all database tables, and server-side secrets management. However, no system is completely secure. If you believe your account has been compromised, contact us immediately at <a href="mailto:security@sageroom.com">security@sageroom.com</a>.</p>
+    </div>
+
+    <div>
+      <h2 style="font-size:1.25rem;margin-bottom:0.75rem">9. Children</h2>
+      <p>Sageroom is not intended for users under 18 years of age. We do not knowingly collect personal information from children. If you believe a child has created an account, please contact us at <a href="mailto:privacy@sageroom.com">privacy@sageroom.com</a> and we will delete the account promptly.</p>
+    </div>
+
+    <div>
+      <h2 style="font-size:1.25rem;margin-bottom:0.75rem">10. Your rights</h2>
+      <p>Under the Australian Privacy Principles, you have the right to:</p>
+      <ul style="margin-top:0.75rem;padding-left:1.25rem;display:flex;flex-direction:column;gap:0.375rem">
+        <li><strong>Access</strong> the personal information we hold about you</li>
+        <li><strong>Correct</strong> inaccurate or incomplete personal information</li>
+        <li><strong>Delete</strong> your account and all associated personal data</li>
+        <li><strong>Complain</strong> about how we handle your personal information</li>
+      </ul>
+      <p class="mt-1">To exercise any of these rights, email <a href="mailto:privacy@sageroom.com">privacy@sageroom.com</a>. You may also delete your account directly from the account settings page, which immediately triggers deletion of all personal data (except billing records required by law).</p>
+      <p class="mt-1">We will respond to access and correction requests within 30 days.</p>
+    </div>
+
+    <div>
+      <h2 style="font-size:1.25rem;margin-bottom:0.75rem">11. Notifiable data breaches</h2>
+      <p>In the event of an eligible data breach under the Privacy Act 1988, we will notify the Office of the Australian Information Commissioner (OAIC) and all affected individuals within 30 days of becoming aware of the breach, in accordance with the Notifiable Data Breaches (NDB) scheme.</p>
+    </div>
+
+    <div>
+      <h2 style="font-size:1.25rem;margin-bottom:0.75rem">12. Changes to this policy</h2>
+      <p>We may update this policy from time to time. We will notify you by email of material changes at least 14 days before they take effect. The date at the top of this page indicates when the policy was last updated.</p>
+    </div>
+
+    <div>
+      <h2 style="font-size:1.25rem;margin-bottom:0.75rem">13. Contact and complaints</h2>
+      <p>Privacy enquiries: <a href="mailto:privacy@sageroom.com">privacy@sageroom.com</a></p>
+      <p class="mt-1">If you are not satisfied with our response to a privacy complaint, you may contact the Office of the Australian Information Commissioner (OAIC):</p>
+      <ul style="margin-top:0.5rem;padding-left:1.25rem">
+        <li>Website: <a href="https://www.oaic.gov.au" target="_blank" rel="noopener">oaic.gov.au</a></li>
+        <li>Phone: 1300 363 992</li>
+      </ul>
     </div>
 
   </div>

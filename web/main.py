@@ -15,7 +15,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from .brain_registry import BRAIN_REGISTRY, load_brains
 from .db import get_supabase
 from .limiter import limiter
-from .routers import admin, billing, brains, chat, group_chat, webhooks
+from .routers import account, admin, billing, brains, chat, group_chat, webhooks
 
 logging.basicConfig(
     level=logging.INFO,
@@ -80,6 +80,7 @@ app.include_router(brains.router)
 app.include_router(chat.router)
 app.include_router(group_chat.router)
 app.include_router(billing.router)
+app.include_router(account.router)
 app.include_router(admin.router)
 app.include_router(webhooks.router)
 
