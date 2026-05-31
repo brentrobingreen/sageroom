@@ -15,13 +15,20 @@ logger = logging.getLogger(__name__)
 
 _anthropic = anthropic.AsyncAnthropic()
 
-# Injected at the end of each brain's system prompt during group chat
-_GROUP_ADDENDUM = (
-    "\n\n## Group discussion mode\n"
-    "You are in a live group discussion with other thinkers. "
-    "Keep each response to 2–4 sentences — this is real-time conversation, not a presentation. "
-    "React directly to what's been said. Disagree specifically when you disagree. "
-    "No headers, no bullet points, no framework names unless essential."
+_LEAD_ADDENDUM = (
+    "\n\n## Group discussion — you are speaking first this turn\n"
+    "Give your perspective in 2–3 sentences. Be direct and specific. "
+    "End with ONE question — either for the user or the group. "
+    "No headers, no bullets, no framework names."
+)
+
+_REACTOR_ADDENDUM = (
+    "\n\n## Group discussion — others have spoken before you this turn\n"
+    "React in 1–2 sentences only. Either: agree and add one new dimension, "
+    "or disagree with something specific. "
+    "Do NOT ask a question — one has already been asked. "
+    "Do NOT summarise what others said. Just respond to it. "
+    "No headers, no bullets."
 )
 
 
@@ -96,11 +103,13 @@ async def stream_group_turn(
 
     current_turn_others: dict[str, str] = {}
 
-    for brain in brains:
+    for i, brain in enumerate(brains):
+        is_lead = i == 0
         yield f"data: {json.dumps({'type': 'brain_start', 'brain_slug': brain.slug})}\n\n"
 
         msgs = _build_messages(brain, user_message, history, current_turn_others)
-        system = brain.system_prompt + _GROUP_ADDENDUM
+        system = brain.system_prompt + (_LEAD_ADDENDUM if is_lead else _REACTOR_ADDENDUM)
+        max_tok = 150 if is_lead else 100
 
         full: list[str] = []
         in_tok = out_tok = cr_tok = cw_tok = 0
@@ -108,7 +117,7 @@ async def stream_group_turn(
         try:
             async with _anthropic.messages.stream(
                 model=MODEL,
-                max_tokens=350,
+                max_tokens=max_tok,
                 system=system,
                 messages=msgs,
             ) as stream:
