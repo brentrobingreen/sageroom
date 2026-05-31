@@ -117,7 +117,7 @@ async def stream_chat(
 
     assistant_content = "".join(full_response)
     await _save_message(conv_id, user_id, "assistant", assistant_content)
-    await log_usage(
+    cost = await log_usage(
         user_id=user_id,
         input_tokens=input_tokens,
         output_tokens=output_tokens,
@@ -125,6 +125,10 @@ async def stream_chat(
         cache_write_tokens=cache_write_tokens,
         brain_slug=brain.slug,
         conversation_id=conv_id,
+    )
+    logger.info(
+        "claude call brain=%s in=%d out=%d cache_read=%d cache_write=%d cost=$%.6f",
+        brain.slug, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, cost,
     )
 
     yield f"data: {json.dumps({'type': 'done', 'conversation_id': conv_id})}\n\n"

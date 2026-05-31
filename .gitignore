@@ -1,0 +1,28 @@
+# Environment — never commit secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Brain pipeline artifacts — only final outputs ship
+# brain.md and system_prompt.md are intentionally NOT excluded
+brains/*/test_results.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp

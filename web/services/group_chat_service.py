@@ -89,11 +89,15 @@ async def run_group_chat(session_id: str, user_id: str, brain_slugs: list[str], 
         content, usage = result
         round1_responses[brain.slug] = content
         await _save_response(session_id, brain.slug, 1, content)
-        await log_usage(
+        cost = await log_usage(
             user_id=user_id,
             brain_slug=brain.slug,
             group_session_id=session_id,
             **usage,
+        )
+        logger.info(
+            "claude call [group/r1] brain=%s in=%d out=%d cost=$%.6f",
+            brain.slug, usage["input_tokens"], usage["output_tokens"], cost,
         )
 
     # ── Round 2: each brain responds knowing what others said ────────────────
@@ -127,11 +131,15 @@ async def run_group_chat(session_id: str, user_id: str, brain_slugs: list[str], 
         content, usage = result
         round2_responses[brain.slug] = content
         await _save_response(session_id, brain.slug, 2, content)
-        await log_usage(
+        cost = await log_usage(
             user_id=user_id,
             brain_slug=brain.slug,
             group_session_id=session_id,
             **usage,
+        )
+        logger.info(
+            "claude call [group/r2] brain=%s in=%d out=%d cost=$%.6f",
+            brain.slug, usage["input_tokens"], usage["output_tokens"], cost,
         )
 
     # ── Synthesis: neutral facilitator weaves everything together ────────────
@@ -172,10 +180,14 @@ async def run_group_chat(session_id: str, user_id: str, brain_slugs: list[str], 
         "content": synthesis_content,
     }).execute()
 
-    await log_usage(
+    synthesis_cost = await log_usage(
         user_id=user_id,
         group_session_id=session_id,
         **synthesis_usage,
+    )
+    logger.info(
+        "claude call [group/synthesis] session=%s in=%d out=%d cost=$%.6f",
+        session_id, synthesis_usage["input_tokens"], synthesis_usage["output_tokens"], synthesis_cost,
     )
 
     await _update_session_status(session_id, "complete")

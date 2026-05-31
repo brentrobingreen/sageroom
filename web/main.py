@@ -1,22 +1,43 @@
 import logging
 import os
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from .brain_registry import BRAIN_REGISTRY, load_brains
 from .db import get_supabase
 from .limiter import limiter
 from .routers import admin, billing, brains, chat, group_chat, webhooks
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 logger = logging.getLogger(__name__)
+
+
+class RequestLogMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        start = time.perf_counter()
+        response = await call_next(request)
+        ms = (time.perf_counter() - start) * 1000
+        # Never log path params that could contain message content
+        logger.info(
+            "%s %s %d %.0fms",
+            request.method,
+            request.url.path,
+            response.status_code,
+            ms,
+        )
+        return response
 
 
 @asynccontextmanager
@@ -30,15 +51,21 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Sageroom", lifespan=lifespan, docs_url=None, redoc_url=None)
 
+# Middleware — order matters: outermost runs first
+app.add_middleware(RequestLogMiddleware)
+app.add_middleware(SlowAPIMiddleware)
+
 # Rate limiting
 app.state.limiter = limiter
 app.add_exception_handler(
     RateLimitExceeded,
-    lambda req, exc: JSONResponse(status_code=429, content={"detail": "Too many requests. Please slow down and try again."}),
+    lambda req, exc: JSONResponse(
+        status_code=429,
+        content={"detail": "Too many requests. Please slow down and try again."},
+    ),
 )
-app.add_middleware(SlowAPIMiddleware)
 
-# CORS
+# CORS — ALLOWED_ORIGIN must be set to the production domain in Railway env vars
 allowed_origins = [o.strip() for o in os.environ.get("ALLOWED_ORIGIN", "http://localhost:8000").split(",")]
 app.add_middleware(
     CORSMiddleware,
