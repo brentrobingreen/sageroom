@@ -6,28 +6,39 @@ let brains = [];
 let selectedSlugs = new Set();
 let sessionId = null;
 let sessionBrainSlugs = [];
-let turnCount = 0;
-let isStreaming = false;
+let contextRound = 0;
+let followUpCount = 0;
 
 // ── DOM ───────────────────────────────────────────────────────────────────────
-const setupView      = document.getElementById("setup-view");
-const chatView       = document.getElementById("chat-view");
-const brainGrid      = document.getElementById("brain-grid");
-const openingQ       = document.getElementById("opening-question");
-const conveneBtn     = document.getElementById("convene-btn");
-const selectedCount  = document.getElementById("selected-count");
-const topbarBrains   = document.getElementById("topbar-brains");
-const groupMessages  = document.getElementById("group-messages");
-const messagesInner  = document.getElementById("group-messages-inner");
-const groupInput     = document.getElementById("group-input");
-const groupSendBtn   = document.getElementById("group-send-btn");
-const synthesizeBtn  = document.getElementById("synthesize-btn");
-const newCouncilBtn  = document.getElementById("new-council-btn");
-const sessionsList   = document.getElementById("sessions-list");
-const synthesisModal = document.getElementById("synthesis-modal");
-const synthesisClose = document.getElementById("synthesis-close");
-const synthesisLoading = document.getElementById("synthesis-loading");
+const phaseSetup       = document.getElementById("phase-setup");
+const phaseContext     = document.getElementById("phase-context");
+const phaseDeliberating = document.getElementById("phase-deliberating");
+const phaseResults     = document.getElementById("phase-results");
+
+const brainGrid        = document.getElementById("brain-grid");
+const openingQ         = document.getElementById("opening-question");
+const conveneBtn       = document.getElementById("convene-btn");
+const selectedCount    = document.getElementById("selected-count");
+const sessionsList     = document.getElementById("sessions-list");
+
+const contextAvatars   = document.getElementById("context-avatars");
+const contextQuestion  = document.getElementById("context-question");
+const contextAnswer    = document.getElementById("context-answer");
+const contextSubmitBtn = document.getElementById("context-submit-btn");
+const contextSkipBtn   = document.getElementById("context-skip-btn");
+const contextProgress  = document.getElementById("context-progress");
+
+const deliberatingAvatars = document.getElementById("deliberating-avatars");
+const resultsAvatars   = document.getElementById("results-avatars");
+const resultsQuestion  = document.getElementById("results-question");
+const perspectivesArea = document.getElementById("perspectives-area");
+const followUpRounds   = document.getElementById("followup-rounds");
+const synthesisArea    = document.getElementById("synthesis-area");
 const synthesisContent = document.getElementById("synthesis-content");
+const followupArea     = document.getElementById("followup-area");
+const followupInput    = document.getElementById("followup-input");
+const followupBtn      = document.getElementById("followup-btn");
+const newSessionBtn    = document.getElementById("new-session-btn");
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
@@ -40,9 +51,7 @@ async function loadBrains() {
   try {
     brains = await getBrains();
     renderBrainGrid();
-  } catch (e) {
-    showToast(e.message);
-  }
+  } catch (e) { showToast(e.message); }
 }
 
 function renderBrainGrid() {
@@ -88,7 +97,7 @@ function updateConveneState() {
 
 openingQ.addEventListener("input", updateConveneState);
 
-// ── Session start ─────────────────────────────────────────────────────────────
+// ── Convene ───────────────────────────────────────────────────────────────────
 conveneBtn.addEventListener("click", async () => {
   const question = openingQ.value.trim();
   if (selectedSlugs.size < 2 || !question) return;
@@ -98,217 +107,291 @@ conveneBtn.addEventListener("click", async () => {
 
   try {
     const slugs = Array.from(selectedSlugs);
-    const { session_id } = await apiFetch("/api/group-chat", {
+    const result = await apiFetch("/api/group-chat", {
       method: "POST",
       body: JSON.stringify({ brain_slugs: slugs, question }),
     });
-    sessionId = session_id;
+
+    sessionId = result.session_id;
     sessionBrainSlugs = slugs;
-    showChatView(slugs);
-    await sendMessage(question, true);
+    contextRound = 0;
+
+    if (result.ready) {
+      showDeliberating(question, slugs);
+      await runDeliberation();
+    } else {
+      showContext(result.question, slugs, 1);
+    }
   } catch (e) {
     showToast(e.message);
     conveneBtn.disabled = false;
-    conveneBtn.textContent = "Convene the council ✦";
+    conveneBtn.textContent = "Convene ✦";
   }
 });
 
-// ── Chat view ─────────────────────────────────────────────────────────────────
-function showChatView(slugs) {
-  setupView.classList.add("hidden");
-  chatView.classList.remove("hidden");
+// ── Context phase ─────────────────────────────────────────────────────────────
+function showContext(question, slugs, round) {
+  contextRound = round;
+  contextQuestion.textContent = question;
+  contextAnswer.value = "";
+  contextSubmitBtn.disabled = true;
+  contextProgress.textContent = `Context question ${round} of 2`;
 
-  topbarBrains.innerHTML = slugs.map(s => {
-    const brain = brains.find(b => b.slug === s);
-    return `
-      <div style="display:flex;align-items:center;gap:0.375rem;padding:0.25rem 0.625rem;border-radius:999px;background:var(--bg-elevated);font-size:0.8125rem;font-weight:500">
-        <img style="width:20px;height:20px;border-radius:50%;object-fit:cover;background:var(--purple-muted)"
-          src="/images/${s}.svg" alt="" onerror="this.src='/images/default.svg'">
-        ${brain?.display_name || s}
-      </div>`;
-  }).join("");
+  contextAvatars.innerHTML = slugs.map(s => `
+    <img style="width:40px;height:40px;border-radius:50%;background:var(--purple-muted)"
+      src="/images/${s}.svg" onerror="this.src='/images/default.svg'" alt="">
+  `).join("");
+
+  showPhase("context");
+  setTimeout(() => contextAnswer.focus(), 100);
 }
 
-newCouncilBtn.addEventListener("click", () => {
-  sessionId = null;
-  sessionBrainSlugs = [];
-  turnCount = 0;
-  messagesInner.innerHTML = "";
-  selectedSlugs.clear();
-  openingQ.value = "";
-  updateConveneState();
-  document.querySelectorAll("#brain-grid .brain-card").forEach(c => {
-    c.classList.remove("selected");
-    c.querySelector(".check-icon").style.opacity = "0";
-  });
-  chatView.classList.add("hidden");
-  setupView.classList.remove("hidden");
-  synthesizeBtn.disabled = true;
-  conveneBtn.textContent = "Convene the council ✦";
-  loadPastSessions();
+contextAnswer.addEventListener("input", () => {
+  contextSubmitBtn.disabled = !contextAnswer.value.trim();
 });
 
-// ── Messaging ─────────────────────────────────────────────────────────────────
-async function sendMessage(message, isOpening = false) {
-  if (isStreaming) return;
-
-  if (!isOpening) {
-    groupInput.value = "";
-    resizeInput();
+contextSubmitBtn.addEventListener("click", () => submitContextAnswer());
+contextSkipBtn.addEventListener("click", () => submitContextAnswer(true));
+contextAnswer.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey && contextAnswer.value.trim()) {
+    e.preventDefault();
+    submitContextAnswer();
   }
+});
 
-  appendUserMessage(message);
-  scrollToBottom();
-
-  const brainBubbles = {};
-  for (const slug of sessionBrainSlugs) {
-    brainBubbles[slug] = appendBrainBubble(slug);
-  }
-  scrollToBottom();
-
-  isStreaming = true;
-  setInputEnabled(false);
+async function submitContextAnswer(skip = false) {
+  const answer = skip ? "(skipped)" : contextAnswer.value.trim();
+  contextSubmitBtn.disabled = true;
+  contextSubmitBtn.innerHTML = '<span class="spinner spinner-sm"></span>';
 
   try {
-    const token = await getToken();
-    const res = await fetch(`/api/group-chat/${sessionId}/message`, {
+    const result = await apiFetch(`/api/group-chat/${sessionId}/context`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ answer }),
     });
 
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      showToast(body.detail || "Something went wrong.");
-      removeBrainBubbles(brainBubbles);
-      return;
-    }
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buf = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value, { stream: true });
-      const lines = buf.split("\n");
-      buf = lines.pop();
-
-      for (const line of lines) {
-        if (!line.startsWith("data: ")) continue;
-        try {
-          const data = JSON.parse(line.slice(6));
-          if (data.type === "brain_start") {
-            activateBrainBubble(brainBubbles[data.brain_slug]);
-          } else if (data.type === "token") {
-            appendToBrainBubble(brainBubbles[data.brain_slug], data.text);
-            scrollToBottom();
-          } else if (data.type === "brain_done") {
-            finalizeBrainBubble(brainBubbles[data.brain_slug]);
-          } else if (data.type === "brain_error") {
-            showBrainError(brainBubbles[data.brain_slug]);
-          } else if (data.type === "all_done") {
-            turnCount = data.turn;
-          }
-        } catch (_) {}
-      }
+    if (result.ready) {
+      const question = openingQ.value.trim();
+      showDeliberating(question, sessionBrainSlugs);
+      await runDeliberation();
+    } else {
+      showContext(result.question, sessionBrainSlugs, contextRound + 1);
     }
   } catch (e) {
-    showToast("Stream interrupted. Please try again.");
-    removeBrainBubbles(brainBubbles);
-  } finally {
-    isStreaming = false;
-    setInputEnabled(true);
-    synthesizeBtn.disabled = false;
-    scrollToBottom();
+    showToast(e.message);
+    contextSubmitBtn.disabled = false;
+    contextSubmitBtn.textContent = "Continue ✦";
   }
 }
 
-// ── Message rendering ─────────────────────────────────────────────────────────
-function appendUserMessage(text) {
-  const el = document.createElement("div");
-  el.className = "message message-user";
-  const escaped = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  el.innerHTML = `<div class="message-bubble message-bubble-user">${escaped}</div>`;
-  messagesInner.appendChild(el);
+// ── Deliberation ──────────────────────────────────────────────────────────────
+function showDeliberating(question, slugs) {
+  deliberatingAvatars.innerHTML = slugs.map(s => `
+    <img style="width:48px;height:48px;border-radius:50%;background:var(--purple-muted)"
+      src="/images/${s}.svg" onerror="this.src='/images/default.svg'" alt="">
+  `).join("");
+  showPhase("deliberating");
 }
 
-function appendBrainBubble(slug) {
+async function runDeliberation(isFollowUp = false, followUpQuestion = "") {
+  const endpoint = isFollowUp
+    ? `/api/group-chat/${sessionId}/followup`
+    : `/api/group-chat/${sessionId}/deliberate`;
+  const body = isFollowUp ? JSON.stringify({ question: followUpQuestion }) : undefined;
+  const method = "POST";
+
+  if (!isFollowUp) {
+    // Prepare results view
+    perspectivesArea.innerHTML = "";
+    followUpRounds.innerHTML = "";
+    synthesisArea.classList.add("hidden");
+    synthesisContent.innerHTML = "";
+    followupArea.classList.add("hidden");
+
+    const question = openingQ.value.trim();
+    resultsQuestion.textContent = `"${question}"`;
+    resultsAvatars.innerHTML = sessionBrainSlugs.map(s => `
+      <img style="width:28px;height:28px;border-radius:50%;background:var(--purple-muted)"
+        src="/images/${s}.svg" onerror="this.src='/images/default.svg'" alt="">
+    `).join("");
+
+    // Create empty perspective cards upfront
+    for (const slug of sessionBrainSlugs) {
+      perspectivesArea.appendChild(makePerspectiveCard(slug));
+    }
+  } else {
+    // Follow-up: add a new round section
+    followUpCount++;
+    const roundEl = document.createElement("div");
+    roundEl.id = `followup-round-${followUpCount}`;
+    roundEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:0.75rem;margin:2rem 0 1rem">
+        <div style="flex:1;height:1px;background:var(--border-subtle)"></div>
+        <span class="text-xs text-muted">Follow-up: "${followUpQuestion}"</span>
+        <div style="flex:1;height:1px;background:var(--border-subtle)"></div>
+      </div>
+      <div class="followup-perspectives" style="display:flex;flex-direction:column;gap:1rem;margin-bottom:1rem"></div>
+      <div class="followup-synthesis hidden card synthesis-doc" style="margin-bottom:1rem"></div>
+    `;
+    followUpRounds.appendChild(roundEl);
+
+    const perspContainer = roundEl.querySelector(".followup-perspectives");
+    for (const slug of sessionBrainSlugs) {
+      perspContainer.appendChild(makePerspectiveCard(slug, `followup-${followUpCount}-`));
+    }
+
+    // Reset synthesis area for this follow-up
+    synthesisArea.classList.add("hidden");
+    synthesisContent.innerHTML = "";
+
+    showPhase("results"); // ensure results visible
+    roundEl.scrollIntoView({ behavior: "smooth" });
+  }
+
+  const token = await getToken();
+  let res;
+  try {
+    res = await fetch(endpoint, {
+      method,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body,
+    });
+  } catch {
+    showToast("Connection failed. Please try again.");
+    if (!isFollowUp) showPhase("setup");
+    return;
+  }
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    showToast(err.detail || "Something went wrong.");
+    if (!isFollowUp) showPhase("setup");
+    return;
+  }
+
+  showPhase("results");
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  let synthBuf = "";
+  let inSynthesis = false;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split("\n");
+    buf = lines.pop();
+
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      try {
+        const data = JSON.parse(line.slice(6));
+
+        if (data.type === "brain_start") {
+          activateCard(data.brain_slug, isFollowUp);
+        } else if (data.type === "token") {
+          appendToCard(data.brain_slug, data.text, isFollowUp);
+        } else if (data.type === "brain_done") {
+          finalizeCard(data.brain_slug, isFollowUp);
+        } else if (data.type === "synthesis_start") {
+          inSynthesis = true;
+          synthBuf = "";
+          if (isFollowUp) {
+            const roundEl = document.getElementById(`followup-round-${followUpCount}`);
+            const synthEl = roundEl?.querySelector(".followup-synthesis");
+            if (synthEl) synthEl.classList.remove("hidden");
+          } else {
+            synthesisArea.classList.remove("hidden");
+          }
+        } else if (data.type === "synthesis_token") {
+          synthBuf += data.text;
+          const target = isFollowUp
+            ? document.getElementById(`followup-round-${followUpCount}`)?.querySelector(".followup-synthesis")
+            : synthesisContent;
+          if (target) target.innerHTML = renderMarkdown(synthBuf);
+        } else if (data.type === "synthesis_done") {
+          inSynthesis = false;
+          followupArea.classList.remove("hidden");
+          followupInput.value = "";
+          followupBtn.disabled = false;
+          followupBtn.textContent = "Ask ✦";
+          if (!isFollowUp) synthesisArea.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else if (data.type === "all_done") {
+          loadPastSessions();
+        }
+      } catch (_) {}
+    }
+  }
+}
+
+// ── Perspective cards ─────────────────────────────────────────────────────────
+function makePerspectiveCard(slug, prefix = "") {
   const brain = brains.find(b => b.slug === slug);
-  const wrap = document.createElement("div");
-  wrap.className = "message group-brain-msg";
-  wrap.dataset.slug = slug;
-  wrap.innerHTML = `
-    <img class="message-avatar" src="/images/${slug}.svg" alt="" onerror="this.src='/images/default.svg'">
-    <div style="flex:1;min-width:0">
-      <div class="group-brain-name">${brain?.display_name || slug}</div>
-      <div class="message-bubble message-bubble-ai">
-        <div class="brain-thinking">
-          <div class="spinner spinner-sm"></div>
-          <span>Thinking…</span>
-        </div>
-        <div class="bubble-content" style="display:none"></div>
+  const el = document.createElement("div");
+  el.className = "card";
+  el.id = `${prefix}card-${slug}`;
+  el.style.cssText = "opacity:0.4;transition:opacity 0.3s";
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:0.875rem;margin-bottom:0.875rem">
+      <img style="width:40px;height:40px;border-radius:50%;background:var(--purple-muted);flex-shrink:0"
+        src="/images/${slug}.svg" alt="" onerror="this.src='/images/default.svg'">
+      <div>
+        <div style="font-weight:600">${brain?.display_name || slug}</div>
+        <div class="text-xs text-muted">${brain?.tagline || ""}</div>
       </div>
     </div>
+    <div class="card-body" style="color:var(--text);line-height:1.75;font-size:0.9375rem">
+      <div class="brain-thinking" style="color:var(--text-muted);font-size:0.875rem">
+        <div class="spinner spinner-sm"></div> <span>Deliberating…</span>
+      </div>
+      <div class="card-text" style="display:none"></div>
+    </div>
   `;
-  messagesInner.appendChild(wrap);
-  return wrap;
+  return el;
 }
 
-function activateBrainBubble(wrap) {
-  if (!wrap) return;
-  wrap.querySelector(".brain-thinking").style.display = "none";
-  wrap.querySelector(".bubble-content").style.display = "block";
+function activateCard(slug, isFollowUp) {
+  const prefix = isFollowUp ? `followup-${followUpCount}-` : "";
+  const card = document.getElementById(`${prefix}card-${slug}`);
+  if (!card) return;
+  card.style.opacity = "1";
+  card.querySelector(".brain-thinking").style.display = "none";
+  card.querySelector(".card-text").style.display = "block";
 }
 
-function appendToBrainBubble(wrap, text) {
-  if (!wrap) return;
-  const content = wrap.querySelector(".bubble-content");
-  content.textContent += text;
+function appendToCard(slug, text, isFollowUp) {
+  const prefix = isFollowUp ? `followup-${followUpCount}-` : "";
+  const card = document.getElementById(`${prefix}card-${slug}`);
+  if (!card) return;
+  const el = card.querySelector(".card-text");
+  el.textContent += text;
 }
 
-function finalizeBrainBubble(wrap) {
-  if (!wrap) return;
-  const content = wrap.querySelector(".bubble-content");
-  const raw = content.textContent;
-  content.innerHTML = renderMarkdown(raw);
+function finalizeCard(slug, isFollowUp) {
+  const prefix = isFollowUp ? `followup-${followUpCount}-` : "";
+  const card = document.getElementById(`${prefix}card-${slug}`);
+  if (!card) return;
+  const el = card.querySelector(".card-text");
+  el.innerHTML = renderMarkdown(el.textContent);
 }
 
-function showBrainError(wrap) {
-  if (!wrap) return;
-  wrap.querySelector(".brain-thinking").style.display = "none";
-  const content = wrap.querySelector(".bubble-content");
-  content.style.display = "block";
-  content.innerHTML = `<span style="color:var(--red)">Something went wrong. Please try again.</span>`;
-}
-
-function removeBrainBubbles(brainBubbles) {
-  Object.values(brainBubbles).forEach(el => el?.remove());
-}
-
-// ── Synthesize ────────────────────────────────────────────────────────────────
-synthesizeBtn.addEventListener("click", async () => {
-  if (!sessionId) return;
-  synthesisModal.classList.remove("hidden");
-  synthesisLoading.style.display = "flex";
-  synthesisContent.classList.add("hidden");
-  synthesisContent.innerHTML = "";
-
-  try {
-    const { content } = await apiFetch(`/api/group-chat/${sessionId}/synthesize`, { method: "POST" });
-    synthesisContent.innerHTML = renderMarkdown(content);
-    synthesisLoading.style.display = "none";
-    synthesisContent.classList.remove("hidden");
-  } catch (e) {
-    synthesisLoading.style.display = "none";
-    synthesisContent.innerHTML = `<p style="color:var(--red)">${e.message}</p>`;
-    synthesisContent.classList.remove("hidden");
-  }
+// ── Follow-up ─────────────────────────────────────────────────────────────────
+followupBtn.addEventListener("click", async () => {
+  const q = followupInput.value.trim();
+  if (!q) return;
+  followupBtn.disabled = true;
+  followupBtn.innerHTML = '<span class="spinner spinner-sm"></span>';
+  await runDeliberation(true, q);
 });
 
-synthesisClose.addEventListener("click", () => synthesisModal.classList.add("hidden"));
-synthesisModal.addEventListener("click", e => { if (e.target === synthesisModal) synthesisModal.classList.add("hidden"); });
+followupInput.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey && followupInput.value.trim()) {
+    e.preventDefault();
+    followupBtn.click();
+  }
+});
 
 // ── Past sessions ─────────────────────────────────────────────────────────────
 async function loadPastSessions() {
@@ -318,14 +401,14 @@ async function loadPastSessions() {
       sessionsList.innerHTML = '<p class="text-muted text-sm">No past sessions yet.</p>';
       return;
     }
-    sessionsList.innerHTML = sessions.slice(0, 8).map(s => `
-      <div class="card card-sm" style="cursor:pointer" onclick="resumeSession('${s.id}', ${JSON.stringify(s.brain_slugs)})">
+    sessionsList.innerHTML = sessions.slice(0, 6).map(s => `
+      <div class="card card-sm" style="cursor:pointer" onclick="resumeSession('${s.id}', ${JSON.stringify(s.brain_slugs)}, ${JSON.stringify(s.question)})">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
           <p style="color:var(--text);font-size:0.875rem;flex:1">${s.question}</p>
-          <span class="badge ${s.status === 'synthesized' ? 'badge-gold' : s.status === 'active' ? 'badge-green' : 'badge-purple'}">${s.status}</span>
+          <span class="badge ${s.status === 'synthesized' ? 'badge-gold' : 'badge-purple'}">${s.status}</span>
         </div>
         <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.5rem">
-          ${(s.brain_slugs || []).map(slug => `<img style="width:20px;height:20px;border-radius:50%;background:var(--purple-muted)" src="/images/${slug}.svg" onerror="this.src='/images/default.svg'" alt="">`).join("")}
+          ${(s.brain_slugs || []).map(slug => `<img style="width:20px;height:20px;border-radius:50%" src="/images/${slug}.svg" onerror="this.src='/images/default.svg'" alt="">`).join("")}
           <span class="text-xs text-muted">${new Date(s.created_at).toLocaleDateString()}</span>
         </div>
       </div>
@@ -333,67 +416,113 @@ async function loadPastSessions() {
   } catch (_) {}
 }
 
-window.resumeSession = async function(id, slugs) {
+window.resumeSession = async function(id, slugs, question) {
   try {
     const session = await getGroupSession(id);
     sessionId = id;
     sessionBrainSlugs = slugs;
-    messagesInner.innerHTML = "";
-    showChatView(slugs);
+    followUpCount = 0;
 
-    for (const msg of (session.messages || [])) {
-      if (msg.role === "user") {
-        appendUserMessage(msg.content);
-      } else {
-        const wrap = appendBrainBubble(msg.brain_slug);
-        activateBrainBubble(wrap);
-        const content = wrap.querySelector(".bubble-content");
-        content.innerHTML = renderMarkdown(msg.content);
+    perspectivesArea.innerHTML = "";
+    followUpRounds.innerHTML = "";
+    synthesisArea.classList.add("hidden");
+    synthesisContent.innerHTML = "";
+    followupArea.classList.add("hidden");
+
+    resultsQuestion.textContent = `"${question}"`;
+    resultsAvatars.innerHTML = slugs.map(s => `
+      <img style="width:28px;height:28px;border-radius:50%" src="/images/${s}.svg" onerror="this.src='/images/default.svg'" alt="">
+    `).join("");
+
+    // Group messages by turn and role
+    const msgs = session.messages || [];
+    const turns: Record<number, any> = {};
+    for (const m of msgs) {
+      if (m.brain_slug === "facilitator" || (!m.brain_slug && m.role === "user")) continue;
+      const t = m.turn;
+      if (!turns[t]) turns[t] = {};
+      if (m.role === "assistant" && m.brain_slug) turns[t][m.brain_slug] = m.content;
+    }
+
+    const turnNums = Object.keys(turns).map(Number).sort((a, b) => a - b);
+    const [firstTurn, ...restTurns] = turnNums;
+
+    if (firstTurn !== undefined) {
+      for (const slug of slugs) {
+        const card = makePerspectiveCard(slug);
+        card.style.opacity = "1";
+        card.querySelector(".brain-thinking").style.display = "none";
+        const textEl = card.querySelector(".card-text");
+        textEl.style.display = "block";
+        if (turns[firstTurn]?.[slug]) textEl.innerHTML = renderMarkdown(turns[firstTurn][slug]);
+        perspectivesArea.appendChild(card);
       }
     }
 
-    if (session.synthesis) {
-      synthesizeBtn.disabled = false;
-    } else if ((session.messages || []).length > 0) {
-      synthesizeBtn.disabled = false;
+    for (let i = 0; i < restTurns.length; i++) {
+      const t = restTurns[i];
+      followUpCount++;
+      const roundEl = document.createElement("div");
+      roundEl.id = `followup-round-${followUpCount}`;
+      const followUpQ = msgs.find(m => m.turn === t && m.role === "user" && !m.brain_slug)?.content || "Follow-up";
+      roundEl.innerHTML = `
+        <div style="display:flex;align-items:center;gap:0.75rem;margin:2rem 0 1rem">
+          <div style="flex:1;height:1px;background:var(--border-subtle)"></div>
+          <span class="text-xs text-muted">Follow-up: "${followUpQ}"</span>
+          <div style="flex:1;height:1px;background:var(--border-subtle)"></div>
+        </div>
+        <div class="followup-perspectives" style="display:flex;flex-direction:column;gap:1rem;margin-bottom:1rem"></div>
+      `;
+      const perspContainer = roundEl.querySelector(".followup-perspectives");
+      for (const slug of slugs) {
+        const card = makePerspectiveCard(slug, `followup-${followUpCount}-`);
+        card.style.opacity = "1";
+        card.querySelector(".brain-thinking").style.display = "none";
+        const textEl = card.querySelector(".card-text");
+        textEl.style.display = "block";
+        if (turns[t]?.[slug]) textEl.innerHTML = renderMarkdown(turns[t][slug]);
+        perspContainer.appendChild(card);
+      }
+      followUpRounds.appendChild(roundEl);
     }
 
-    setInputEnabled(true);
-    scrollToBottom(true);
+    if (session.synthesis) {
+      synthesisContent.innerHTML = renderMarkdown(session.synthesis.content);
+      synthesisArea.classList.remove("hidden");
+    }
+
+    followupArea.classList.remove("hidden");
+    showPhase("results");
   } catch (e) {
     showToast(e.message);
   }
 };
 
-// ── Utilities ─────────────────────────────────────────────────────────────────
-function setInputEnabled(enabled) {
-  groupInput.disabled = !enabled;
-  groupSendBtn.disabled = !enabled;
-}
-
-function scrollToBottom(force = false) {
-  groupMessages.scrollTop = groupMessages.scrollHeight;
-}
-
-function resizeInput() {
-  groupInput.style.height = "auto";
-  groupInput.style.height = Math.min(groupInput.scrollHeight, 140) + "px";
-}
-
-groupInput.addEventListener("input", resizeInput);
-groupInput.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    const msg = groupInput.value.trim();
-    if (msg && !isStreaming) sendMessage(msg);
-  }
+newSessionBtn.addEventListener("click", () => {
+  sessionId = null;
+  sessionBrainSlugs = [];
+  followUpCount = 0;
+  selectedSlugs.clear();
+  openingQ.value = "";
+  updateConveneState();
+  document.querySelectorAll("#brain-grid .brain-card").forEach(c => {
+    c.classList.remove("selected");
+    c.querySelector(".check-icon").style.opacity = "0";
+  });
+  conveneBtn.textContent = "Convene ✦";
+  showPhase("setup");
+  loadPastSessions();
 });
 
-groupSendBtn.addEventListener("click", () => {
-  const msg = groupInput.value.trim();
-  if (msg && !isStreaming) sendMessage(msg);
-});
+// ── Phase transitions ─────────────────────────────────────────────────────────
+function showPhase(name) {
+  phaseSetup.classList.toggle("hidden", name !== "setup");
+  phaseContext.classList.toggle("hidden", name !== "context");
+  phaseDeliberating.classList.toggle("hidden", name !== "deliberating");
+  phaseResults.classList.toggle("hidden", name !== "results");
+}
 
+// ── Markdown renderer ─────────────────────────────────────────────────────────
 function renderMarkdown(text) {
   return text
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -403,10 +532,10 @@ function renderMarkdown(text) {
     .replace(/\*([^*]+)\*/g, "<em>$1</em>")
     .replace(/^## (.+)$/gm, "<h3>$1</h3>")
     .replace(/^### (.+)$/gm, "<h4>$1</h4>")
-    .replace(/^\d+\. (.+)$/gm, "<li class=\"ordered\">$1</li>")
+    .replace(/^\d+\. (.+)$/gm, "<li class=\"ol\">$1</li>")
     .replace(/^[-•] (.+)$/gm, "<li>$1</li>")
-    .replace(/((?:<li class="ordered">.*<\/li>\n?)+)/gs, "<ol>$1</ol>")
-    .replace(/((?:<li>(?!.*class="ordered").*<\/li>\n?)+)/gs, "<ul>$1</ul>")
+    .replace(/((?:<li class="ol">.*?<\/li>\n?)+)/gs, "<ol>$1</ol>")
+    .replace(/((?:<li>(?!.*class=).*?<\/li>\n?)+)/gs, "<ul>$1</ul>")
     .replace(/\n{2,}/g, "</p><p>")
     .replace(/\n/g, "<br>")
     .replace(/^(?!<[hupol])(.+)/m, "<p>$1</p>");
