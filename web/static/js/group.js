@@ -529,6 +529,7 @@ function renderMarkdown(text) {
     codeBlocks.push(`<pre><code>${c.trim()}</code></pre>`);
     return `\x00CODE${codeBlocks.length - 1}\x00`;
   });
+  text = text.replace(/(^[ \t]*[-•\d].*$)\n{2,}(?=[ \t]*[-•\d])/gm, '$1\n');
   return text
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/`([^`]+)`/g, "<code>$1</code>")
