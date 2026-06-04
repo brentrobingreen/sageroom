@@ -18,14 +18,15 @@ logger = logging.getLogger(__name__)
 _anthropic = anthropic.AsyncAnthropic()
 
 
-async def _get_or_create_conversation(user_id: str, brain_slug: str, conversation_id: UUID | None) -> str:
+async def _get_or_create_conversation(user_id: str, brain_slug: str, conversation_id: UUID | None, first_message: str = "") -> str:
     db = await get_supabase()
     if conversation_id:
         return str(conversation_id)
+    title = first_message[:72] + ("…" if len(first_message) > 72 else "")
     result = await db.table("conversations").insert({
         "user_id": user_id,
         "brain_slug": brain_slug,
-        "title": None,
+        "title": title or None,
     }).execute()
     return result.data[0]["id"]
 
@@ -64,7 +65,7 @@ async def stream_chat(
         yield f"data: {json.dumps({'type': 'monthly_cost_cap_exceeded', 'message': e.detail})}\n\n"
         return
 
-    conv_id = await _get_or_create_conversation(user_id, brain.slug, conversation_id)
+    conv_id = await _get_or_create_conversation(user_id, brain.slug, conversation_id, message)
 
     if history is None:
         history = await _load_history(conv_id)

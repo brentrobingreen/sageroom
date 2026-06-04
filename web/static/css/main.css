@@ -536,6 +536,61 @@ section { padding: 4rem 0; }
 .send-btn:hover { background: var(--purple-hover); }
 .send-btn:disabled { background: var(--border); cursor: not-allowed; }
 
+/* ── Brain colour themes ────────────────────────────────── */
+/* Applied via data-brain attribute on .chat-layout */
+:root {
+  --brain-primary:     var(--purple);
+  --brain-primary-h:   var(--purple-hover);
+  --brain-bubble:      var(--purple);
+  --brain-dim:         var(--purple-dim);
+  --brain-muted:       var(--purple-muted);
+}
+
+[data-brain="tony_robbins"] {
+  --brain-primary:   #f97316;
+  --brain-primary-h: #fb923c;
+  --brain-bubble:    #ea580c;
+  --brain-dim:       rgba(249,115,22,0.12);
+  --brain-muted:     rgba(249,115,22,0.25);
+}
+
+[data-brain="warren_buffett"] {
+  --brain-primary:   #78716c;
+  --brain-primary-h: #a8a29e;
+  --brain-bubble:    #57534e;
+  --brain-dim:       rgba(120,113,108,0.12);
+  --brain-muted:     rgba(120,113,108,0.25);
+}
+
+[data-brain="robin_sharma"] {
+  --brain-primary:   #d97706;
+  --brain-primary-h: #f59e0b;
+  --brain-bubble:    #b45309;
+  --brain-dim:       rgba(217,119,6,0.12);
+  --brain-muted:     rgba(217,119,6,0.25);
+}
+
+/* Apply theme vars to interactive elements */
+.message-bubble-user         { background: var(--brain-bubble); }
+.send-btn                    { background: var(--brain-primary); }
+.send-btn:hover              { background: var(--brain-primary-h); }
+.chat-input:focus            { border-color: var(--brain-primary); }
+.typing-cursor               { background: var(--brain-primary); }
+.brain-chip.active           { background: var(--brain-dim); }
+.brain-chip.active .brain-chip-name { color: var(--brain-primary-h); }
+.sidebar-item.active         { background: var(--brain-dim); color: var(--brain-primary-h); }
+
+/* Topbar left accent stripe per brain */
+.chat-topbar::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--brain-primary);
+  opacity: 0.7;
+}
+.chat-topbar { position: relative; }
+
 /* ── Brain chips (sidebar) ──────────────────────────────── */
 .brain-chip {
   display: flex;
