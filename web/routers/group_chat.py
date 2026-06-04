@@ -11,7 +11,7 @@ from ..db import get_supabase
 from ..limiter import limiter
 from ..models import GroupChatRequest
 from ..brain_registry import BRAIN_REGISTRY
-from ..services.billing_service import is_subscriber
+from ..services.billing_service import check_and_deduct_access
 from ..services.group_chat_service import (
     assess_context, save_context_answer, stream_deliberation
 )
@@ -64,8 +64,7 @@ async def create_group_session(
 ) -> dict:
     user_id = current_user["id"]
 
-    if not await is_subscriber(user_id):
-        raise HTTPException(status_code=402, detail="Group deliberation requires an active subscription.")
+    await check_and_deduct_access(user_id)
 
     unknown = [s for s in body.brain_slugs if s not in BRAIN_REGISTRY]
     if unknown:

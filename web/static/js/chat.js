@@ -1,6 +1,7 @@
-import { requireAuth, setupSessionMonitor, signOut } from "./auth.js";
+import { getSession, signOut, signUp, signIn } from "./auth.js";
 import {
-  getBrains, getConversations, getMessages, deleteConversation, streamChat
+  getBrains, getConversations, getMessages, deleteConversation,
+  streamChat, getBillingStatus, getBillingPacks, purchaseCredits, apiFetch
 } from "./api.js";
 
 // ── State ────────────────────────────────────────────────────────────────────
@@ -11,6 +12,8 @@ let activeConversationId = null;
 let abortStream = null;
 let isStreaming = false;
 let autoScroll = true;
+let currentUser = null;
+let authTab = "signup";
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
 const sidebar        = document.getElementById("sidebar");
@@ -25,25 +28,37 @@ const topbarTagline  = document.getElementById("topbar-tagline");
 const messages       = document.getElementById("messages");
 const chatInput      = document.getElementById("chat-input");
 const sendBtn        = document.getElementById("send-btn");
-const paywallOverlay = document.getElementById("paywall-overlay");
-const subscribeBtn   = document.getElementById("subscribe-btn");
 const emptyState     = document.getElementById("empty-state");
+const authBottomBtn  = document.getElementById("auth-bottom-btn");
+const accountLink    = document.getElementById("account-link");
+const authModal      = document.getElementById("auth-modal");
+const creditsOverlay = document.getElementById("credits-overlay");
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 async function init() {
-  await requireAuth();
-  await setupSessionMonitor();
-  await Promise.all([loadBrains(), loadConversations()]);
+  const session = await getSession();
+  currentUser = session?.user || null;
 
-  const saved = localStorage.getItem("sageroom_brain");
-  if (saved && brains.find(b => b.slug === saved)) {
-    selectBrain(saved, false);
-  } else if (brains.length) {
-    selectBrain(brains[0].slug, false);
+  await loadBrains();
+
+  if (currentUser) {
+    authBottomBtn.textContent = "Sign out";
+    authBottomBtn.onclick = () => signOut();
+    accountLink.style.display = "";
+    await Promise.all([loadConversations()]);
+    const saved = localStorage.getItem("sageroom_brain");
+    if (saved && brains.find(b => b.slug === saved)) selectBrain(saved, false);
+    else if (brains.length) selectBrain(brains[0].slug, false);
+  } else {
+    authBottomBtn.textContent = "Sign in / Sign up";
+    authBottomBtn.onclick = () => openAuthModal("signup");
+    accountLink.style.display = "none";
+    // Still select first brain so layout looks alive
+    if (brains.length) selectBrain(brains[0].slug, false);
   }
 
   setupScrollWatcher();
-  chatInput.focus();
+  if (currentUser) chatInput.focus();
 }
 
 // ── Brains ───────────────────────────────────────────────────────────────────
@@ -59,14 +74,21 @@ async function loadBrains() {
 function renderBrainList() {
   brainList.innerHTML = "";
   for (const brain of brains) {
-    const el = document.createElement("div");
-    el.className = "sidebar-item";
+    const el = document.createElement("button");
+    el.className = "brain-chip";
     el.dataset.slug = brain.slug;
     el.innerHTML = `
-      <img class="brain-avatar" style="width:28px;height:28px" src="/images/${brain.slug}.svg" alt="" onerror="this.src='/images/default.svg'">
-      <span>${brain.display_name}</span>
+      <img src="/images/${brain.slug}.svg" alt="" onerror="this.src='/images/default.svg'">
+      <div class="brain-chip-info">
+        <div class="brain-chip-name">${brain.display_name}</div>
+        <div class="brain-chip-tagline">${brain.tagline || ""}</div>
+      </div>
     `;
-    el.addEventListener("click", () => { selectBrain(brain.slug); closeSidebar(); });
+    el.addEventListener("click", () => {
+      if (!currentUser) { openAuthModal("signup"); return; }
+      selectBrain(brain.slug);
+      closeSidebar();
+    });
     brainList.appendChild(el);
   }
 }
@@ -75,9 +97,8 @@ function selectBrain(slug, clearConversation = true) {
   activeBrainSlug = slug;
   localStorage.setItem("sageroom_brain", slug);
 
-  document.querySelectorAll("#brain-list .sidebar-item").forEach(el => {
-    el.classList.toggle("active", el.dataset.slug === slug);
-  });
+  document.querySelectorAll(".brain-chip").forEach(el =>
+    el.classList.toggle("active", el.dataset.slug === slug));
 
   const brain = brains.find(b => b.slug === slug);
   if (brain) {
@@ -89,8 +110,15 @@ function selectBrain(slug, clearConversation = true) {
 
   if (clearConversation) {
     activeConversationId = null;
-    messages.innerHTML = "";
+    if (messages) messages.innerHTML = "";
     showEmptyState(true);
+  }
+
+  if (currentUser) {
+    renderConvList();
+    sendBtn.disabled = false;
+  } else {
+    sendBtn.disabled = false; // still clickable — triggers auth modal
   }
   closeSidebar();
 }
@@ -100,12 +128,16 @@ async function loadConversations() {
   try {
     conversations = await getConversations();
     renderConvList();
-  } catch (_) { /* non-fatal */ }
+  } catch (_) {}
 }
 
 function renderConvList() {
   convList.innerHTML = "";
   const filtered = conversations.filter(c => !activeBrainSlug || c.brain_slug === activeBrainSlug);
+  if (!filtered.length) {
+    convList.innerHTML = '<p class="text-xs text-muted" style="padding:0.5rem 0.625rem">No conversations yet.</p>';
+    return;
+  }
   for (const conv of filtered) {
     const el = document.createElement("div");
     el.className = "sidebar-item";
@@ -119,25 +151,21 @@ function renderConvList() {
 
 async function selectConversation(id) {
   activeConversationId = id;
-  document.querySelectorAll("#conv-list .sidebar-item").forEach(el => {
-    el.classList.toggle("active", el.dataset.id === id);
-  });
-
+  document.querySelectorAll("#conv-list .sidebar-item").forEach(el =>
+    el.classList.toggle("active", el.dataset.id === id));
   showEmptyState(false);
   messages.innerHTML = '<div class="spinner spinner-lg" style="margin:2rem auto"></div>';
-
   try {
     const msgs = await getMessages(id);
     messages.innerHTML = "";
     for (const m of msgs) appendMessage(m.role, m.content, false);
     scrollToBottom(true);
-  } catch (e) {
-    showError(e.message);
-  }
+  } catch (e) { showError(e.message); }
 }
 
 // ── Messaging ─────────────────────────────────────────────────────────────────
 async function sendMessage() {
+  if (!currentUser) { openAuthModal("signup"); return; }
   if (isStreaming || !activeBrainSlug) return;
   const text = chatInput.value.trim();
   if (!text) return;
@@ -150,15 +178,11 @@ async function sendMessage() {
 
   const aiBubble = appendMessage("assistant", "", true);
   let buffer = "";
-
   isStreaming = true;
   setInputEnabled(false);
 
   const timeout = setTimeout(() => {
-    if (isStreaming) {
-      abortCurrentStream();
-      showBubbleError(aiBubble, "No response in 10 seconds. Please try again.");
-    }
+    if (isStreaming) { abortCurrentStream(); showBubbleError(aiBubble, "No response in 10 seconds. Please try again."); }
   }, 10000);
 
   abortStream = await streamChat({
@@ -167,10 +191,7 @@ async function sendMessage() {
     conversationId: activeConversationId,
     onToken(token, convId) {
       clearTimeout(timeout);
-      if (convId && !activeConversationId) {
-        activeConversationId = convId;
-        loadConversations();
-      }
+      if (convId && !activeConversationId) { activeConversationId = convId; loadConversations(); }
       buffer += token;
       aiBubble.querySelector(".bubble-content").innerHTML = renderMarkdown(buffer);
       const cursor = aiBubble.querySelector(".typing-cursor");
@@ -186,7 +207,7 @@ async function sendMessage() {
     },
     onError(msg) {
       clearTimeout(timeout);
-      if (msg.includes("Subscribe")) showPaywall();
+      if (msg.includes("free messages") || msg.includes("credits")) showCreditsOverlay();
       else showBubbleError(aiBubble, msg);
       finishStream();
     },
@@ -194,17 +215,99 @@ async function sendMessage() {
 }
 
 function finishStream() {
-  isStreaming = false;
-  abortStream = null;
-  setInputEnabled(true);
-  chatInput.focus();
+  isStreaming = false; abortStream = null;
+  setInputEnabled(true); chatInput.focus();
 }
 
 function abortCurrentStream() {
   if (abortStream) { abortStream(); abortStream = null; }
-  isStreaming = false;
-  setInputEnabled(true);
+  isStreaming = false; setInputEnabled(true);
 }
+
+// ── Auth modal ────────────────────────────────────────────────────────────────
+function openAuthModal(tab = "signup") {
+  authTab = tab;
+  authModal.classList.remove("hidden");
+  document.getElementById("tab-signup").classList.toggle("active", tab === "signup");
+  document.getElementById("tab-signin").classList.toggle("active", tab === "signin");
+  document.getElementById("auth-submit-btn").textContent = tab === "signup" ? "Create account" : "Sign in";
+  document.getElementById("modal-title").textContent = tab === "signup" ? "Welcome to Sageroom" : "Sign in";
+  document.getElementById("auth-error").classList.add("hidden");
+  document.getElementById("auth-success").classList.add("hidden");
+  setTimeout(() => document.getElementById("auth-email").focus(), 50);
+}
+
+window.switchTab = function(tab) {
+  authTab = tab;
+  document.getElementById("tab-signup").classList.toggle("active", tab === "signup");
+  document.getElementById("tab-signin").classList.toggle("active", tab === "signin");
+  document.getElementById("auth-submit-btn").textContent = tab === "signup" ? "Create account" : "Sign in";
+  document.getElementById("modal-title").textContent = tab === "signup" ? "Welcome to Sageroom" : "Sign in";
+  document.getElementById("auth-error").classList.add("hidden");
+  document.getElementById("auth-success").classList.add("hidden");
+};
+
+document.getElementById("modal-close-btn").onclick = () => authModal.classList.add("hidden");
+authModal.addEventListener("click", e => { if (e.target === authModal) authModal.classList.add("hidden"); });
+
+document.getElementById("auth-submit-btn").onclick = async () => {
+  const email = document.getElementById("auth-email").value.trim();
+  const password = document.getElementById("auth-password").value;
+  const errEl = document.getElementById("auth-error");
+  const okEl = document.getElementById("auth-success");
+  errEl.classList.add("hidden"); okEl.classList.add("hidden");
+  const btn = document.getElementById("auth-submit-btn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner spinner-sm"></span>';
+  try {
+    if (authTab === "signup") {
+      const result = await signUp(email, password);
+      if (result.needsConfirmation) {
+        okEl.textContent = "Check your inbox for a confirmation link, then sign in.";
+        okEl.classList.remove("hidden");
+        switchTab("signin");
+      } else {
+        window.location.reload();
+      }
+    } else {
+      await signIn(email, password);
+      window.location.reload();
+    }
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.classList.remove("hidden");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = authTab === "signup" ? "Create account" : "Sign in";
+  }
+};
+
+document.getElementById("auth-password").addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("auth-submit-btn").click();
+});
+
+// ── Credits overlay ───────────────────────────────────────────────────────────
+async function showCreditsOverlay() {
+  creditsOverlay.classList.remove("hidden");
+  const packsEl = document.getElementById("credits-packs");
+  packsEl.innerHTML = '<div class="spinner" style="margin:1rem auto"></div>';
+  try {
+    const packs = await getBillingPacks();
+    packsEl.innerHTML = packs.map(p => `
+      <button class="btn btn-primary btn-full" onclick="buyPack('${p.id}')">
+        ${p.price_label} — ${p.credits} credits (${p.name})
+      </button>
+    `).join("");
+  } catch (_) {
+    packsEl.innerHTML = '<a href="/account.html" class="btn btn-primary btn-full">View account</a>';
+  }
+}
+
+window.buyPack = async (packId) => { await purchaseCredits(packId); };
+
+creditsOverlay.addEventListener("click", e => {
+  if (e.target === creditsOverlay) creditsOverlay.classList.add("hidden");
+});
 
 // ── Render helpers ─────────────────────────────────────────────────────────────
 function appendMessage(role, content, withCursor) {
@@ -227,7 +330,6 @@ function appendMessage(role, content, withCursor) {
     const escaped = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     wrap.innerHTML = `<div class="message-bubble message-bubble-user">${escaped}</div>`;
   }
-
   messages.appendChild(wrap);
   return wrap;
 }
@@ -270,9 +372,8 @@ function scrollToBottom(force = false) {
 }
 
 function setupScrollWatcher() {
-  messages.addEventListener("scroll", () => {
-    const atBottom = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 80;
-    autoScroll = atBottom;
+  messages?.addEventListener("scroll", () => {
+    autoScroll = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 80;
   });
 }
 
@@ -280,23 +381,13 @@ function setupScrollWatcher() {
 function setInputEnabled(enabled) {
   chatInput.disabled = !enabled;
   sendBtn.disabled = !enabled;
-  if (enabled) {
-    sendBtn.innerHTML = "↑";
-    sendBtn.title = "Send";
-  } else {
-    sendBtn.innerHTML = "■";
-    sendBtn.title = "Stop";
-    sendBtn.onclick = () => { abortCurrentStream(); };
-  }
+  if (enabled) { sendBtn.innerHTML = "↑"; sendBtn.title = "Send"; sendBtn.onclick = null; }
+  else { sendBtn.innerHTML = "■"; sendBtn.title = "Stop"; sendBtn.onclick = () => abortCurrentStream(); }
 }
 
 function showEmptyState(show) {
   emptyState?.classList.toggle("hidden", !show);
-  messages.style.display = show ? "none" : "flex";
-}
-
-function showPaywall() {
-  paywallOverlay?.classList.remove("hidden");
+  if (messages) messages.style.display = show ? "none" : "flex";
 }
 
 function showError(msg) {
@@ -320,7 +411,7 @@ hamburger?.addEventListener("click", () => {
 });
 sidebarOverlay?.addEventListener("click", closeSidebar);
 
-// ── Input auto-resize & keyboard shortcuts ─────────────────────────────────────
+// ── Input ─────────────────────────────────────────────────────────────────────
 function resizeInput() {
   chatInput.style.height = "auto";
   chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + "px";
@@ -328,10 +419,7 @@ function resizeInput() {
 
 chatInput?.addEventListener("input", resizeInput);
 chatInput?.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    if (!isStreaming) sendMessage();
-  }
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!isStreaming) sendMessage(); }
   if (e.key === "Escape" && isStreaming) abortCurrentStream();
 });
 
@@ -342,20 +430,10 @@ sendBtn?.addEventListener("click", () => {
 
 newChatBtn?.addEventListener("click", () => {
   activeConversationId = null;
-  messages.innerHTML = "";
+  if (messages) messages.innerHTML = "";
   showEmptyState(true);
   chatInput.focus();
   closeSidebar();
-});
-
-subscribeBtn?.addEventListener("click", async () => {
-  const { startCheckout } = await import("./api.js");
-  await startCheckout();
-});
-
-document.getElementById("signout-btn")?.addEventListener("click", async () => {
-  const { signOut: so } = await import("./auth.js");
-  await so();
 });
 
 // ── Boot ──────────────────────────────────────────────────────────────────────

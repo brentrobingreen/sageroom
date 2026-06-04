@@ -87,7 +87,7 @@ class BrainOut(BaseModel):
 
 class SubscriptionStatusOut(BaseModel):
     status: str
-    current_period_end: Optional[datetime] = None
+    credits_balance: int = 0
     free_messages_used: int
     monthly_cost_usd: float
 

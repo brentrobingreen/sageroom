@@ -7,11 +7,7 @@ from fastapi.responses import StreamingResponse
 from ..db import get_supabase
 from ..limiter import limiter
 from ..models import ChatRequest, ConversationOut, MessageOut
-from ..services.billing_service import (
-    can_use_free_tier,
-    increment_free_messages,
-    is_subscriber,
-)
+from ..services.billing_service import check_and_deduct_access
 from ..services.brain_service import get_brain_or_404
 from ..services.chat_service import stream_chat
 from ..services.cost_service import check_cost_cap
@@ -57,18 +53,7 @@ async def chat_stream(request: Request, body: ChatRequest, current_user: dict = 
     user_id = current_user["id"]
     brain = await get_brain_or_404(body.brain_slug)
 
-    subscribed = await is_subscriber(user_id)
-    if not subscribed:
-        if not await can_use_free_tier(user_id):
-            raise HTTPException(
-                status_code=402,
-                detail="You've used your 10 free messages. Subscribe to continue chatting.",
-            )
-        await increment_free_messages(user_id)
-
-    # Primary cost cap check — must happen before StreamingResponse is created so
-    # a 429 is returned cleanly. Raising inside the generator after headers are
-    # sent would just close the connection with no useful error to the client.
+    await check_and_deduct_access(user_id)
     await check_cost_cap(user_id)
 
     return StreamingResponse(

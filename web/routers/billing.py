@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from ..limiter import limiter
 from ..models import SubscriptionStatusOut
 from ..services.billing_service import (
-    create_checkout_session,
-    create_portal_session,
+    CREDIT_PACKS,
+    create_credit_checkout,
     get_subscription_status,
 )
 from .auth import get_current_user
@@ -18,25 +18,25 @@ async def billing_status(request: Request, current_user: dict = Depends(get_curr
     return await get_subscription_status(current_user["id"])
 
 
-@router.post("/checkout")
-@limiter.limit("10/minute")
-async def checkout(request: Request, current_user: dict = Depends(get_current_user)) -> dict:
-    try:
-        url = await create_checkout_session(current_user["id"], current_user["email"])
-        return {"url": url}
-    except ValueError as e:
-        if str(e) == "already_subscribed":
-            raise HTTPException(status_code=400, detail="You already have an active subscription.")
-        raise
+@router.get("/packs")
+@limiter.limit("60/minute")
+async def list_packs(request: Request) -> list[dict]:
+    return [
+        {"id": k, "name": v["name"], "credits": v["credits"], "price_label": v["price_label"]}
+        for k, v in CREDIT_PACKS.items()
+    ]
 
 
-@router.post("/portal")
+@router.post("/purchase")
 @limiter.limit("10/minute")
-async def portal(request: Request, current_user: dict = Depends(get_current_user)) -> dict:
+async def purchase_credits(request: Request, current_user: dict = Depends(get_current_user)) -> dict:
+    body = await request.json()
+    pack_id = body.get("pack_id", "")
     try:
-        url = await create_portal_session(current_user["id"])
+        url = await create_credit_checkout(current_user["id"], current_user["email"], pack_id)
         return {"url": url}
     except ValueError as e:
-        if str(e) == "no_customer":
-            raise HTTPException(status_code=400, detail="No billing account found. Please subscribe first.")
-        raise
+        msg = str(e)
+        if msg.startswith("unknown_pack"):
+            raise HTTPException(status_code=400, detail="Invalid credit pack.")
+        raise HTTPException(status_code=500, detail="Billing configuration error.")

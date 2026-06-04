@@ -170,12 +170,15 @@ export async function getBillingStatus() {
   return apiFetch("/api/billing/status");
 }
 
-export async function startCheckout() {
-  const { url } = await apiFetch("/api/billing/checkout", { method: "POST" });
-  window.location.href = url;
+export async function getBillingPacks() {
+  const res = await fetch("/api/billing/packs");
+  return res.json();
 }
 
-export async function openBillingPortal() {
-  const { url } = await apiFetch("/api/billing/portal", { method: "POST" });
+export async function purchaseCredits(packId) {
+  const { url } = await apiFetch("/api/billing/purchase", {
+    method: "POST",
+    body: JSON.stringify({ pack_id: packId }),
+  });
   window.location.href = url;
 }

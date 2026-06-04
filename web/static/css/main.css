@@ -536,6 +536,39 @@ section { padding: 4rem 0; }
 .send-btn:hover { background: var(--purple-hover); }
 .send-btn:disabled { background: var(--border); cursor: not-allowed; }
 
+/* ── Brain chips (sidebar) ──────────────────────────────── */
+.brain-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  width: 100%;
+  border: none;
+  background: none;
+  text-align: left;
+  transition: background var(--transition);
+}
+.brain-chip:hover { background: var(--bg-elevated); }
+.brain-chip.active { background: var(--purple-dim); }
+.brain-chip img {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: var(--purple-muted);
+}
+.brain-chip-info { min-width: 0; flex: 1; }
+.brain-chip-name { font-size: 0.9375rem; font-weight: 600; color: var(--text); line-height: 1.3; }
+.brain-chip-tagline {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ── Group chat ─────────────────────────────────────────── */
 .group-topbar {
   display: flex;
