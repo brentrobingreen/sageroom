@@ -97,9 +97,6 @@ function selectBrain(slug, clearConversation = true) {
   activeBrainSlug = slug;
   localStorage.setItem("sageroom_brain", slug);
 
-  // Apply brain colour theme
-  document.querySelector(".chat-layout")?.setAttribute("data-brain", slug);
-
   document.querySelectorAll(".brain-chip").forEach(el =>
     el.classList.toggle("active", el.dataset.slug === slug));
 
